@@ -1,0 +1,9 @@
+{
+  "name": "team-titan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Habit Tracker - Hack Day Haldia x GRID community starter",
+  "scripts": {
+    "start": "npx --yes serve ."
+  }
+}
