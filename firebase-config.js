@@ -78,9 +78,14 @@ try {
 /**
  * Trigger Google Sign-In via Popup (with fallback to Redirect if popup is blocked)
  */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(useRedirect = false) {
   if (!isFirebaseAvailable || !auth || !googleProvider) {
     throw new Error('Firebase Authentication is not available. Please check internet connection.');
+  }
+
+  if (useRedirect) {
+    await signInWithRedirect(auth, googleProvider);
+    return null;
   }
 
   try {
@@ -115,7 +120,7 @@ export async function checkRedirectAuth() {
     return result ? result.user : null;
   } catch (error) {
     console.warn('HabitFlow: Error processing redirect result:', error);
-    return null;
+    throw error;
   }
 }
 

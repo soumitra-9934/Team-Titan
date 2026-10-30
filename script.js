@@ -520,13 +520,43 @@ function updateAuthUI(user) {
   }
 }
 
+function formatAuthError(error) {
+  if (!error) return 'Google sign-in could not be completed.';
+  const code = error.code || '';
+  const currentDomain = window.location.hostname || 'habitflow-haldia.vercel.app';
+
+  switch (code) {
+    case 'auth/unauthorized-domain':
+      return `Domain unauthorized: "${currentDomain}" is not in Firebase Authorized Domains. Add it in Firebase Console > Authentication > Settings > Authorized domains.`;
+    case 'auth/popup-blocked':
+      return 'Sign-in popup was blocked by browser. Please allow popups or retry.';
+    case 'auth/popup-closed-by-user':
+      return null; // Intentional dismissal
+    case 'auth/cancelled-popup-request':
+      return null;
+    case 'auth/operation-not-allowed':
+      return 'Google sign-in is not enabled in Firebase Console (Authentication > Sign-in method).';
+    case 'auth/network-request-failed':
+      return 'Network error: Unable to contact Google Authentication. Please check internet connection.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with the same email using a different sign-in method.';
+    case 'auth/internal-error':
+      return `Firebase Auth internal error: ${error.message || 'Please retry'}`;
+    default:
+      if (error.message) {
+        return error.message.replace('Firebase: ', '').replace(/\s*\([^)]*\)\.?$/, '');
+      }
+      return `Sign-in failed: ${code || 'Unknown error'}. You remain in Guest Mode.`;
+  }
+}
+
 async function handleGoogleSignIn() {
   if (!navigator.onLine) {
     showToast('Internet connection required for Google sign-in. You can continue tracking offline in Guest Mode.', 'warning');
     return;
   }
   try {
-    showToast('Connecting with Google...', 'info');
+    showToast('Connecting with Google...', 'info', 2000);
     const user = await signInWithGoogle();
     if (user) {
       currentUser = user;
@@ -534,9 +564,10 @@ async function handleGoogleSignIn() {
       await evaluateCloudSync(user);
     }
   } catch (error) {
-    console.warn('HabitFlow: Google sign-in failed or closed:', error);
-    if (error.code !== 'auth/popup-closed-by-user') {
-      showToast('Could not sign in with Google. You remain in Guest Mode.', 'warning');
+    console.error('HabitFlow: Google sign-in failed:', error);
+    const msg = formatAuthError(error);
+    if (msg) {
+      showToast(msg, 'warning', 8000);
     }
   }
 }
@@ -2283,7 +2314,7 @@ function clearFormErrors() {
 // ----------------------------------------------------------------
 // TOAST NOTIFICATIONS (Lucide Outline Icons)
 // ----------------------------------------------------------------
-function showToast(message, type = 'info') {
+function showToast(message, type = 'info', duration = 3200) {
   const container = $('#toast-container');
   if (!container) return;
 
@@ -2304,7 +2335,7 @@ function showToast(message, type = 'info') {
   setTimeout(() => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 400);
-  }, 3200);
+  }, duration);
 }
 
 // ----------------------------------------------------------------
@@ -3013,22 +3044,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Firebase Auth listener
   if (isFirebaseAvailable && auth) {
+    let initialSyncDone = false;
+
     onAuthStateChanged(auth, async user => {
       currentUser = user;
       updateAuthUI(user);
-      if (user) {
+      if (user && !initialSyncDone) {
+        initialSyncDone = true;
         await evaluateCloudSync(user);
       }
     });
 
-    // Handle any redirect auth completion
-    checkRedirectAuth().then(user => {
-      if (user) {
-        currentUser = user;
-        updateAuthUI(user);
-        evaluateCloudSync(user);
-      }
-    });
+    // Check for redirect sign-in result and surface any authentication errors
+    checkRedirectAuth()
+      .then(user => {
+        if (user && !initialSyncDone) {
+          currentUser = user;
+          updateAuthUI(user);
+          initialSyncDone = true;
+          evaluateCloudSync(user);
+        }
+      })
+      .catch(error => {
+        console.error('HabitFlow: Redirect authentication failed:', error);
+        const msg = formatAuthError(error);
+        if (msg) showToast(msg, 'warning', 8000);
+      });
   } else {
     updateAuthUI(null);
   }
