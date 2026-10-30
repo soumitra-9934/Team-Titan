@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Habit Tracker — Build habits with streaks and a GitHub-style heatmap. Hack Day Haldia'26.">
-  <meta name="theme-color" content="#3b82f6">
-  <title>HabitFlow — Habit Tracker</title>
+  <meta name="description" content="HabitFlow — Build habits with streaks and a GitHub-style heatmap. Hack Day Haldia'26.">
+  <meta name="theme-color" content="#6554F0">
+  <title>HabitFlow — Habit Tracker &amp; Consistency Dashboard</title>
 
-  <!-- PWA manifest -->
+  <!-- PWA manifest & favicon -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon-192.png">
 
-  <!-- Fonts: Inter -->
+  <!-- Inter Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Styles -->
+  <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -27,237 +27,376 @@
 <!-- Heatmap tooltip (global) -->
 <div id="heatmap-tooltip" class="heatmap-tooltip" role="tooltip" aria-live="polite"></div>
 
-<!-- Toast container -->
+<!-- Toast notifications container -->
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- App Shell -->
 <div id="app-shell">
 
   <!-- ============================================================
-       SIDEBAR
+       A. LEFT SIDEBAR
        ============================================================ -->
   <nav id="sidebar" aria-label="Main navigation">
     <!-- Brand -->
     <div class="sidebar-brand">
       <div class="sidebar-brand-icon" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 11 12 14 22 4"/>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        <!-- Lucide CheckCheck Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M18 6 7 17l-5-5"/>
+          <path d="m22 10-7.5 7.5L13 16"/>
         </svg>
       </div>
       <div>
         <div class="sidebar-brand-name">HabitFlow</div>
-        <div class="sidebar-brand-sub">Hack Day Haldia'26</div>
+        <div class="sidebar-brand-sub">HACK DAY HALDIA'26</div>
       </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- Navigation List -->
     <div class="sidebar-nav">
       <div class="sidebar-section-label">Menu</div>
 
+      <!-- Dashboard -->
       <button class="nav-item active" data-page="dashboard" aria-current="page">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        <!-- Lucide LayoutDashboard Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <rect width="7" height="9" x="3" y="3" rx="1"/>
+          <rect width="7" height="5" x="14" y="3" rx="1"/>
+          <rect width="7" height="9" x="14" y="12" rx="1"/>
+          <rect width="7" height="5" x="3" y="16" rx="1"/>
         </svg>
-        Dashboard
+        <span>Dashboard</span>
       </button>
 
+      <!-- My Habits -->
       <button class="nav-item" data-page="habits" aria-label="My Habits">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        <!-- Lucide ListChecks Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="m3 17 2 2 4-4"/>
+          <path d="m3 7 2 2 4-4"/>
+          <path d="M13 6h8"/>
+          <path d="M13 12h8"/>
+          <path d="M13 18h8"/>
         </svg>
-        My Habits
+        <span>My Habits</span>
         <span class="nav-badge" id="nav-active-count">0</span>
       </button>
 
-      <button class="nav-item" data-page="heatmap">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
-        </svg>
-        Heatmap
-      </button>
-
+      <!-- Analytics (Statistics) -->
       <button class="nav-item" data-page="stats">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-          <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+        <!-- Lucide ChartNoAxesCombined Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M12 16v5"/>
+          <path d="M16 14v7"/>
+          <path d="M20 10v11"/>
+          <path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/>
+          <path d="M4 18v3"/>
+          <path d="M8 14v7"/>
         </svg>
-        Statistics
+        <span>Analytics</span>
       </button>
 
-      <button class="nav-item" data-page="reminders">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      <!-- Calendar (Heatmaps) -->
+      <button class="nav-item" data-page="heatmap">
+        <!-- Lucide CalendarDays Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M8 2v4"/>
+          <path d="M16 2v4"/>
+          <rect width="18" height="18" x="3" y="4" rx="2"/>
+          <path d="M3 10h18"/>
+          <path d="M8 14h.01"/>
+          <path d="M12 14h.01"/>
+          <path d="M16 14h.01"/>
+          <path d="M8 18h.01"/>
+          <path d="M12 18h.01"/>
+          <path d="M16 18h.01"/>
         </svg>
-        Reminders
+        <span>Calendar</span>
+      </button>
+
+      <!-- Focus Timer (Pomodoro) -->
+      <button class="nav-item" data-page="timer">
+        <!-- Lucide Timer Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <line x1="10" x2="14" y1="2" y2="2"/>
+          <line x1="12" x2="12" y1="14" y2="8"/>
+          <circle cx="12" cy="14" r="8"/>
+        </svg>
+        <span>Focus Timer</span>
+      </button>
+
+      <!-- Settings -->
+      <button class="nav-item" data-page="settings">
+        <!-- Lucide Settings Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span>Settings</span>
       </button>
 
       <div class="sep"></div>
-      <div class="sidebar-section-label">Data</div>
+      <div class="sidebar-section-label">Data &amp; Archive</div>
 
+      <!-- Archive -->
       <button class="nav-item" data-page="archive">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/>
-          <line x1="10" y1="12" x2="14" y2="12"/>
+        <!-- Lucide Archive Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <rect width="20" height="5" x="2" y="3" rx="1"/>
+          <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/>
+          <path d="M10 12h4"/>
         </svg>
-        Archive
+        <span>Archive</span>
         <span class="nav-badge" id="nav-archive-count" style="display:none">0</span>
       </button>
 
+      <!-- Export Data -->
       <button class="nav-item" id="export-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <!-- Lucide Download Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" x2="12" y1="15" y2="3"/>
         </svg>
-        Export Data
+        <span>Export Data</span>
       </button>
 
-      <label class="nav-item" style="cursor:pointer" aria-label="Import data">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <!-- Import Data -->
+      <label class="nav-item" style="cursor:pointer" aria-label="Import data" tabindex="0">
+        <!-- Lucide Upload Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" x2="12" y1="3" y2="15"/>
         </svg>
-        Import Data
+        <span>Import Data</span>
         <input type="file" id="import-file" accept=".json" style="display:none" aria-label="Import JSON file">
       </label>
     </div>
 
-    <!-- Footer -->
+    <!-- Sidebar Profile Footer -->
     <div class="sidebar-footer">
-      <button class="nav-item" id="theme-toggle-btn" aria-label="Toggle dark mode">
-        <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-        <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none">
-          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-        <span id="theme-label">Dark mode</span>
-      </button>
+      <div class="user-profile-card">
+        <div class="user-avatar" aria-hidden="true">AM</div>
+        <div class="user-info">
+          <div class="user-name">Alex Morgan</div>
+          <div class="user-status">Pro Member</div>
+        </div>
+      </div>
     </div>
   </nav>
 
   <!-- ============================================================
-       MAIN CONTENT
+       MAIN CONTENT AREA
        ============================================================ -->
   <div id="main-content">
 
-    <!-- Top Bar -->
+    <!-- B. TOP HEADER -->
     <header id="topbar">
-      <button class="btn btn-ghost btn-icon" id="mobile-menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      <!-- Mobile hamburger menu button -->
+      <button class="btn btn-ghost btn-icon" id="mobile-menu-btn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <!-- Lucide Menu Icon -->
+        <svg class="icon" viewBox="0 0 24 24">
+          <line x1="4" x2="20" y1="12" y2="12"/>
+          <line x1="4" x2="20" y1="6" y2="6"/>
+          <line x1="4" x2="20" y1="18" y2="18"/>
         </svg>
       </button>
+
+      <!-- Page title (visible on mobile) -->
       <h1 id="topbar-title">Dashboard</h1>
+
+      <!-- Search bar (desktop) -->
+      <div class="topbar-search-wrap">
+        <!-- Lucide Search Icon -->
+        <svg class="icon search-icon icon-sm" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="text" class="topbar-search-input" id="global-search" placeholder="Search habits, tags..." autocomplete="off">
+      </div>
+
+      <div class="topbar-spacer"></div>
+
+      <!-- Header actions: Theme toggle, Notifications, Add Habit, Profile -->
       <div class="topbar-actions">
-        <button class="btn btn-primary btn-sm" id="topbar-add-habit-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <!-- Light / Dark mode toggle -->
+        <button class="btn btn-ghost btn-icon" id="theme-toggle-btn" aria-label="Toggle dark mode" title="Toggle theme">
+          <!-- Lucide Moon Icon (shown in light mode) -->
+          <svg id="theme-icon-moon" class="icon" viewBox="0 0 24 24">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
           </svg>
-          New Habit
+          <!-- Lucide Sun Icon (shown in dark mode) -->
+          <svg id="theme-icon-sun" class="icon" viewBox="0 0 24 24" style="display:none">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/>
+            <path d="M12 20v2"/>
+            <path d="m4.93 4.93 1.41 1.41"/>
+            <path d="m17.66 17.66 1.41 1.41"/>
+            <path d="M2 12h2"/>
+            <path d="M20 12h2"/>
+            <path d="m6.34 17.66-1.41 1.41"/>
+            <path d="m19.07 4.93-1.41 1.41"/>
+          </svg>
+          <span id="theme-label" style="display:none">Dark mode</span>
         </button>
+
+        <!-- Notification Bell -->
+        <button class="btn btn-ghost btn-icon" id="header-notif-btn" aria-label="View reminders" title="Reminders">
+          <!-- Lucide Bell Icon -->
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+          </svg>
+        </button>
+
+        <!-- Primary New Habit button -->
+        <button class="btn btn-primary btn-sm" id="topbar-add-habit-btn">
+          <!-- Lucide Plus Icon -->
+          <svg class="icon icon-sm" viewBox="0 0 24 24">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+          </svg>
+          <span>New Habit</span>
+        </button>
+
+        <!-- Greeting & Avatar -->
+        <div class="topbar-greeting">
+          <div>
+            <div class="topbar-greeting-text">Welcome, Alex</div>
+            <div class="topbar-greeting-sub" id="header-today-date"></div>
+          </div>
+          <div class="user-avatar" style="width:34px;height:34px;font-size:0.75rem;" aria-hidden="true">AM</div>
+        </div>
       </div>
     </header>
 
-    <!-- Page Content -->
+    <!-- Page Content Container -->
     <main id="page-content">
 
       <!-- ========================================================
-           PAGE: Dashboard
+           PAGE 1: DASHBOARD
            ======================================================== -->
       <section id="page-dashboard" class="page active" aria-label="Dashboard">
 
-        <!-- Welcome header -->
-        <div class="dashboard-header">
-          <div>
-            <h2 class="dashboard-greeting" id="greeting-text">Good morning! 👋</h2>
-            <p class="dashboard-date" id="today-date-text"></p>
+        <!-- C. HERO SECTION: Exact Text & Mountain Summit Illustration -->
+        <div class="hero-banner">
+          <div class="hero-text-wrap">
+            <div class="hero-tag">
+              <!-- Lucide Sparkles Icon -->
+              <svg class="icon icon-sm" viewBox="0 0 24 24">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              </svg>
+              <span>Small Steps, Big Results</span>
+            </div>
+            <h2 class="hero-heading">Build a Better You</h2>
+            <p class="hero-desc">Track your habits, stay consistent, and make progress towards your goals every day.</p>
+            <button class="hero-btn" id="hero-add-habit-btn">
+              <!-- Lucide Plus Icon -->
+              <svg class="icon icon-sm" viewBox="0 0 24 24">
+                <path d="M5 12h14"/>
+                <path d="M12 5v14"/>
+              </svg>
+              <span>Add New Habit</span>
+            </button>
           </div>
-          <div id="motivation-wrap"></div>
+          <!-- Right side: Vector Mountain Landscape Asset -->
+          <div class="hero-illustration" aria-hidden="true">
+            <img src="mountain-hero.svg" alt="Mountain summit illustration with sun, person and flag">
+          </div>
         </div>
 
-        <!-- Stat cards -->
+        <!-- D. FOUR SUMMARY CARDS (Calculated from actual data) -->
         <div class="stat-grid" id="dash-stat-grid">
-          <!-- Populated by JS -->
+          <!-- Populated dynamically by script.js -->
         </div>
 
-        <!-- Motivation banner -->
-        <div id="dash-motivation"></div>
-
-        <!-- Main grid -->
+        <!-- E. MAIN DASHBOARD CONTENT (Two-Column Layout) -->
         <div class="dash-grid">
-          <!-- Today's checklist -->
+          <!-- Left Column: Today's Habits -->
           <div class="card">
             <div class="card-header">
               <div>
                 <div class="card-title">Today's Habits</div>
                 <div class="card-subtitle" id="today-checklist-sub">Track your progress for today</div>
               </div>
-              <button class="btn btn-ghost btn-sm" id="backdate-btn" title="Log past dates">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                Log Past
-              </button>
+              <div style="display:flex;align-items:center;gap:0.75rem;">
+                <button class="btn btn-ghost btn-sm" id="backdate-btn" title="Log past dates">
+                  <!-- Lucide Calendar Icon -->
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <rect width="18" height="18" x="3" y="4" rx="2"/>
+                    <line x1="16" x2="16" y1="2" y2="6"/>
+                    <line x1="8" x2="8" y1="2" y2="6"/>
+                    <line x1="3" x2="21" y1="10" y2="10"/>
+                  </svg>
+                  <span>Log Past</span>
+                </button>
+                <button class="card-action-link" id="view-all-habits-btn">
+                  <span>View All</span>
+                  <!-- Lucide ChevronRight Icon -->
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="card-body">
-              <div id="today-checklist" class="checklist"></div>
+              <div id="today-checklist" class="checklist">
+                <!-- Habit items populated dynamically -->
+              </div>
             </div>
           </div>
 
-          <!-- Progress ring card -->
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">Today's Progress</div>
-                <div class="card-subtitle">Keep the momentum going</div>
+          <!-- Right Column: Weekly Progress & Heatmap -->
+          <div style="display:flex;flex-direction:column;gap:1.5rem;">
+            <!-- Weekly Progress Card -->
+            <div class="card" id="weekly-progress-card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Weekly Progress</div>
+                  <div class="card-subtitle" id="weekly-progress-sub">Completion by day</div>
+                </div>
+                <div id="weekly-progress-badge"></div>
+              </div>
+              <div class="card-body">
+                <div id="weekly-bars-container">
+                  <!-- Populated by script.js -->
+                </div>
               </div>
             </div>
-            <div class="card-body" style="display:flex; align-items:center; justify-content:center; padding-top: 1.5rem; padding-bottom: 1.5rem;">
-              <div class="progress-ring-wrap" id="progress-ring-wrap">
-                <svg class="progress-ring-svg" width="96" height="96" aria-hidden="true">
-                  <circle class="progress-ring-track" cx="48" cy="48" r="40"/>
-                  <circle class="progress-ring-fill" id="ring-fill" cx="48" cy="48" r="40"
-                    stroke-dasharray="251.33" stroke-dashoffset="251.33"/>
-                </svg>
-                <div class="progress-ring-text">
-                  <span class="progress-ring-pct" id="ring-pct">0%</span>
-                  <span class="progress-ring-label" id="ring-label">0 of 0 done</span>
+
+            <!-- Overall Activity Heatmap Card -->
+            <div class="card" id="overall-heatmap-card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Activity Heatmap</div>
+                  <div class="card-subtitle">Past 12 weeks across all habits</div>
+                </div>
+                <button class="card-action-link" id="view-calendar-btn">
+                  <span>Full View</span>
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="card-body">
+                <div id="overall-heatmap-container">
+                  <!-- Heatmap rendered dynamically -->
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Overall heatmap -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Overall Activity</div>
-              <div class="card-subtitle">Past 12 weeks across all habits</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <div id="overall-heatmap-container"></div>
-          </div>
-        </div>
-
       </section>
 
       <!-- ========================================================
-           PAGE: My Habits
+           PAGE 2: MY HABITS
            ======================================================== -->
       <section id="page-habits" class="page" aria-label="My Habits">
         <div class="habits-toolbar">
           <div class="habits-toolbar-left">
-            <div class="tab-group" role="tablist" aria-label="Habit filter">
+            <div class="tab-group" role="tablist" aria-label="Habit category filter">
               <button class="tab-btn active" role="tab" aria-selected="true" data-filter="all">All</button>
               <button class="tab-btn" role="tab" aria-selected="false" data-filter="health">Health</button>
               <button class="tab-btn" role="tab" aria-selected="false" data-filter="learning">Learning</button>
@@ -268,49 +407,41 @@
             </div>
           </div>
           <button class="btn btn-primary btn-sm" id="habits-add-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            <svg class="icon icon-sm" viewBox="0 0 24 24">
+              <path d="M5 12h14"/>
+              <path d="M12 5v14"/>
             </svg>
-            New Habit
+            <span>New Habit</span>
           </button>
         </div>
-        <div class="habits-grid" id="habits-grid"></div>
+        <div class="habits-grid" id="habits-grid">
+          <!-- Habit cards populated by script.js -->
+        </div>
       </section>
 
       <!-- ========================================================
-           PAGE: Heatmap
+           PAGE 3: ANALYTICS (STATISTICS)
            ======================================================== -->
-      <section id="page-heatmap" class="page" aria-label="Activity Heatmap">
-        <div class="section-heading">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
-          </svg>
-          Contribution Heatmaps
-          <span class="section-heading-sub">12-week activity view per habit</span>
-        </div>
-        <div id="heatmap-page-container"></div>
-      </section>
-
-      <!-- ========================================================
-           PAGE: Statistics
-           ======================================================== -->
-      <section id="page-stats" class="page" aria-label="Statistics">
-        <div class="section-heading">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-            <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
-          </svg>
-          Statistics &amp; Insights
+      <section id="page-stats" class="page" aria-label="Analytics">
+        <div class="card-header" style="padding-left:0;padding-right:0;margin-bottom:1.25rem;">
+          <div>
+            <h2 class="card-title" style="font-size:1.375rem;">Analytics &amp; Consistency</h2>
+            <div class="card-subtitle">Detailed completion statistics and progress insights</div>
+          </div>
         </div>
 
+        <!-- 4 Summary Cards -->
         <div class="stats-grid" id="stats-summary-grid"></div>
 
-        <div class="dash-grid mb-4">
+        <!-- Charts Grid -->
+        <div class="dash-grid" style="margin-bottom:1.5rem;">
           <!-- Weekly chart -->
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Weekly Completions</div>
-              <div class="card-subtitle">Last 8 weeks</div>
+              <div>
+                <div class="card-title">Weekly Completions</div>
+                <div class="card-subtitle">Last 8 weeks across all habits</div>
+              </div>
             </div>
             <div class="card-body">
               <div id="weekly-chart"></div>
@@ -320,8 +451,10 @@
           <!-- Monthly chart -->
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Monthly Completions</div>
-              <div class="card-subtitle">Last 6 months</div>
+              <div>
+                <div class="card-title">Monthly Completions</div>
+                <div class="card-subtitle">Last 6 months trend</div>
+              </div>
             </div>
             <div class="card-body">
               <div id="monthly-chart"></div>
@@ -330,10 +463,12 @@
         </div>
 
         <!-- Habit-wise progress -->
-        <div class="card mb-4">
+        <div class="card" style="margin-bottom:1.5rem;">
           <div class="card-header">
-            <div class="card-title">Habit Progress</div>
-            <div class="card-subtitle">Weekly target completion rate</div>
+            <div>
+              <div class="card-title">Habit Progress vs Weekly Targets</div>
+              <div class="card-subtitle">Current week completion rates</div>
+            </div>
           </div>
           <div class="card-body">
             <div id="habit-progress-list" class="habit-progress-list"></div>
@@ -343,8 +478,10 @@
         <!-- Consistency score -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Weekly Consistency Score</div>
-            <div class="card-subtitle">Based on completion vs. weekly targets</div>
+            <div>
+              <div class="card-title">Consistency Score</div>
+              <div class="card-subtitle">Formula-based consistency rating across all active habits</div>
+            </div>
           </div>
           <div class="card-body">
             <div class="consistency-display" id="consistency-display"></div>
@@ -353,31 +490,186 @@
       </section>
 
       <!-- ========================================================
-           PAGE: Reminders
+           PAGE 4: CALENDAR (HEATMAP)
+           ======================================================== -->
+      <section id="page-heatmap" class="page" aria-label="Activity Calendar">
+        <div class="card-header" style="padding-left:0;padding-right:0;margin-bottom:1.25rem;">
+          <div>
+            <h2 class="card-title" style="font-size:1.375rem;">Activity Heatmap</h2>
+            <div class="card-subtitle">12-week GitHub-style contribution heatmaps for individual and combined habits</div>
+          </div>
+        </div>
+        <div id="heatmap-page-container">
+          <!-- Overall and per-habit heatmaps -->
+        </div>
+      </section>
+
+      <!-- ========================================================
+           PAGE 5: FOCUS TIMER (POMODORO)
+           ======================================================== -->
+      <section id="page-timer" class="page" aria-label="Focus Timer">
+        <div class="timer-container">
+          <div class="card-header" style="justify-content:center;text-align:center;margin-bottom:1.5rem;">
+            <div>
+              <h2 class="card-title" style="font-size:1.5rem;">Focus Session</h2>
+              <div class="card-subtitle">Build habits with deep, uninterrupted focus blocks</div>
+            </div>
+          </div>
+
+          <div class="timer-tabs" role="tablist">
+            <button class="timer-tab active" data-mode="pomodoro">Focus (25m)</button>
+            <button class="timer-tab" data-mode="shortBreak">Short Break (5m)</button>
+            <button class="timer-tab" data-mode="longBreak">Long Break (15m)</button>
+          </div>
+
+          <div class="timer-display-wrap">
+            <div class="timer-digits" id="timer-time">25:00</div>
+            <div class="timer-label" id="timer-mode-label">Focus Session</div>
+          </div>
+
+          <div class="timer-controls">
+            <button class="btn btn-secondary btn-icon" id="timer-reset-btn" title="Reset Timer">
+              <svg class="icon" viewBox="0 0 24 24">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+            </button>
+
+            <button class="btn btn-primary" id="timer-toggle-btn" style="padding:0.75rem 2rem;font-size:1rem;border-radius:var(--radius-lg);">
+              <svg class="icon" id="timer-play-icon" viewBox="0 0 24 24">
+                <polygon points="6 3 20 12 6 21 6 3"/>
+              </svg>
+              <svg class="icon" id="timer-pause-icon" viewBox="0 0 24 24" style="display:none;">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+              </svg>
+              <span id="timer-toggle-text">Start Focus</span>
+            </button>
+          </div>
+
+          <div class="card" style="text-align:left;max-width:440px;margin:0 auto;padding:1rem 1.25rem;">
+            <div style="font-size:0.8125rem;font-weight:600;color:var(--text-main);margin-bottom:0.5rem;">Associated Habit:</div>
+            <select class="form-control" id="timer-habit-select">
+              <option value="">General Focus (No habit)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           PAGE 6: SETTINGS
+           ======================================================== -->
+      <section id="page-settings" class="page" aria-label="Settings">
+        <div class="card-header" style="padding-left:0;padding-right:0;margin-bottom:1.25rem;">
+          <div>
+            <h2 class="card-title" style="font-size:1.375rem;">Settings &amp; Preferences</h2>
+            <div class="card-subtitle">Manage appearance, reminders, and data persistence</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.5rem;max-width:800px;">
+          <!-- Appearance -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Appearance</div>
+                <div class="card-subtitle">Switch between light and dark interface themes</div>
+              </div>
+            </div>
+            <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:0.875rem;font-weight:600;color:var(--text-main);">Dark Mode</span>
+              <button class="btn btn-secondary btn-sm" id="settings-theme-btn">
+                <span>Toggle Theme</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Reminders Link Card -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Reminders &amp; Notifications</div>
+                <div class="card-subtitle">Configure habit notification times and browser alert schedules</div>
+              </div>
+              <button class="btn btn-primary btn-sm" id="settings-reminders-link-btn">
+                <span>Manage Reminders</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Data Backup & Portability -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Data Backup &amp; Portability</div>
+                <div class="card-subtitle">Export your habit records as JSON or restore from a backup file</div>
+              </div>
+            </div>
+            <div class="card-body" style="display:flex;gap:1rem;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" id="settings-export-btn">
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" x2="12" y1="15" y2="3"/>
+                </svg>
+                <span>Export JSON Backup</span>
+              </button>
+
+              <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" x2="12" y1="3" y2="15"/>
+                </svg>
+                <span>Import JSON Backup</span>
+                <input type="file" id="settings-import-file" accept=".json" style="display:none">
+              </label>
+            </div>
+          </div>
+
+          <!-- About / Hackathon Info -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">About HabitFlow</div>
+                <div class="card-subtitle">Hack Day Haldia'26 — Team Titan</div>
+              </div>
+            </div>
+            <div class="card-body" style="font-size:0.875rem;color:var(--text-secondary);line-height:1.6;">
+              <p>HabitFlow is an offline-capable, localStorage-backed productivity tracker built with vanilla HTML, modern CSS, and clean modular JavaScript.</p>
+              <div style="margin-top:0.75rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+                <span class="habit-tag">Storage: localStorage</span>
+                <span class="habit-tag">Key: hackday-haldia-team-titan</span>
+                <span class="habit-tag">PWA Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           PAGE 7: REMINDERS
            ======================================================== -->
       <section id="page-reminders" class="page" aria-label="Reminders">
-        <div class="section-heading">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-          Reminder Settings
+        <div class="card-header" style="padding-left:0;padding-right:0;margin-bottom:1.25rem;">
+          <div>
+            <h2 class="card-title" style="font-size:1.375rem;">Reminder Settings</h2>
+            <div class="card-subtitle">Set reminder times and active days for each habit</div>
+          </div>
         </div>
         <div id="notif-banner-wrap"></div>
         <div id="reminder-list" class="reminder-list"></div>
       </section>
 
       <!-- ========================================================
-           PAGE: Archive
+           PAGE 8: ARCHIVED HABITS
            ======================================================== -->
       <section id="page-archive" class="page" aria-label="Archived Habits">
-        <div class="section-heading">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/>
-            <line x1="10" y1="12" x2="14" y2="12"/>
-          </svg>
-          Archived Habits
-          <span class="section-heading-sub">Habits are archived, not deleted — history is preserved</span>
+        <div class="card-header" style="padding-left:0;padding-right:0;margin-bottom:1.25rem;">
+          <div>
+            <h2 class="card-title" style="font-size:1.375rem;">Archived Habits</h2>
+            <div class="card-subtitle">Archived habits keep all historical check-in records safe</div>
+          </div>
         </div>
         <div class="habits-grid" id="archive-grid"></div>
       </section>
@@ -394,8 +686,10 @@
     <div class="modal-header">
       <h2 class="modal-title" id="habit-modal-title">New Habit</h2>
       <button class="btn btn-ghost btn-icon" id="habit-modal-close" aria-label="Close modal">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        <!-- Lucide X Icon -->
+        <svg class="icon icon-sm" viewBox="0 0 24 24">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
         </svg>
       </button>
     </div>
@@ -405,26 +699,26 @@
 
         <div class="form-group">
           <label class="form-label" for="habit-name-input">Habit Name <span class="required">*</span></label>
-          <input type="text" class="form-control" id="habit-name-input" placeholder="e.g. Read for 30 minutes" maxlength="80" autocomplete="off">
+          <input type="text" class="form-control" id="habit-name-input" placeholder="e.g. Read 30 minutes" maxlength="80" autocomplete="off">
           <div class="form-error" id="err-name">Please enter a habit name.</div>
         </div>
 
         <div class="form-group">
           <label class="form-label" for="habit-desc-input">Description</label>
-          <textarea class="form-control" id="habit-desc-input" placeholder="Optional — what's the goal?" rows="2" maxlength="200" style="resize:vertical"></textarea>
+          <textarea class="form-control" id="habit-desc-input" placeholder="Optional context or goal notes..." rows="2" maxlength="200" style="resize:vertical"></textarea>
         </div>
 
         <div class="form-row form-row-2">
           <div class="form-group">
             <label class="form-label" for="habit-category-input">Category <span class="required">*</span></label>
             <select class="form-control" id="habit-category-input">
-              <option value="">Select…</option>
-              <option value="health">🏃 Health</option>
-              <option value="learning">📚 Learning</option>
-              <option value="mindfulness">🧘 Mindfulness</option>
-              <option value="fitness">💪 Fitness</option>
-              <option value="productivity">⚡ Productivity</option>
-              <option value="other">✨ Other</option>
+              <option value="">Select Category...</option>
+              <option value="health">Health</option>
+              <option value="learning">Learning</option>
+              <option value="mindfulness">Mindfulness</option>
+              <option value="fitness">Fitness</option>
+              <option value="productivity">Productivity</option>
+              <option value="other">Other</option>
             </select>
             <div class="form-error" id="err-category">Please select a category.</div>
           </div>
@@ -444,17 +738,17 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Colour</label>
-          <div class="color-picker-group" id="color-picker" role="radiogroup" aria-label="Habit colour">
-            <!-- Populated by JS -->
+          <label class="form-label">Color Theme</label>
+          <div class="color-picker-group" id="color-picker" role="radiogroup" aria-label="Habit color">
+            <!-- Rendered dynamically -->
           </div>
         </div>
       </form>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="habit-modal-cancel">Cancel</button>
+      <button class="btn btn-secondary btn-sm" id="habit-modal-cancel">Cancel</button>
       <button class="btn btn-danger btn-sm" id="habit-archive-btn" style="margin-right:auto;display:none">Archive</button>
-      <button class="btn btn-primary" id="habit-modal-save">Save Habit</button>
+      <button class="btn btn-primary btn-sm" id="habit-modal-save">Save Habit</button>
     </div>
   </div>
 </div>
@@ -467,8 +761,9 @@
     <div class="modal-header">
       <h2 class="modal-title" id="backdate-modal-title">Log Past Check-in</h2>
       <button class="btn btn-ghost btn-icon" id="backdate-modal-close" aria-label="Close">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        <svg class="icon icon-sm" viewBox="0 0 24 24">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
         </svg>
       </button>
     </div>
@@ -476,26 +771,19 @@
       <div class="form-group">
         <label class="form-label" for="backdate-habit-select">Select Habit</label>
         <select class="form-control" id="backdate-habit-select">
-          <option value="">Choose a habit…</option>
+          <option value="">Choose a habit...</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Select Date (last 30 days)</label>
         <div class="date-grid" id="backdate-calendar">
-          <!-- Day headers -->
-          <div class="date-cell" style="font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.625rem">Su</div>
-          <div class="date-cell" style="font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.625rem">Mo</div>
-          <div class="date-cell" style="font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.625rem">Tu</div>
-          <div class="date-cell" style="font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.625rem">We</div>
-          <div class="date-cell" style="font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.625rem">Th</div>
-          <div class="date-cell" style="font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.625rem">Fr</div>
-          <div class="date-cell" style="font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.625rem">Sa</div>
+          <!-- Calendar populated by script.js -->
         </div>
       </div>
-      <div class="form-hint" id="backdate-selected-info">Click a date to toggle the check-in.</div>
+      <div class="form-hint" id="backdate-selected-info" style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Click any date cell to toggle its completion status.</div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="backdate-modal-close2">Close</button>
+      <button class="btn btn-secondary btn-sm" id="backdate-modal-close2">Close</button>
     </div>
   </div>
 </div>
@@ -508,14 +796,15 @@
     <div class="modal-header">
       <h2 class="modal-title" id="reminder-modal-title">Reminder Settings</h2>
       <button class="btn btn-ghost btn-icon" id="reminder-modal-close" aria-label="Close">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        <svg class="icon icon-sm" viewBox="0 0 24 24">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
         </svg>
       </button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="reminder-habit-id">
-      <p class="text-sm text-secondary mb-3" id="reminder-habit-name-label"></p>
+      <p class="text-sm" id="reminder-habit-name-label" style="font-weight:600;color:var(--text-secondary);margin-bottom:1rem;"></p>
 
       <div class="form-group">
         <label class="form-label" for="reminder-time-input">Reminder Time</label>
@@ -537,20 +826,20 @@
 
       <div class="form-group">
         <label class="form-label" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
-          <input type="checkbox" id="reminder-enabled-chk" checked style="width:16px;height:16px;cursor:pointer">
-          Enable reminder notifications
+          <input type="checkbox" id="reminder-enabled-chk" checked style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer">
+          Enable browser notifications
         </label>
-        <div class="form-hint">Requires browser notification permission.</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem;">Requires browser notification permission.</div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="reminder-modal-cancel">Cancel</button>
-      <button class="btn btn-primary" id="reminder-modal-save">Save Reminder</button>
+      <button class="btn btn-secondary btn-sm" id="reminder-modal-cancel">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="reminder-modal-save">Save Reminder</button>
     </div>
   </div>
 </div>
 
-<!-- Script -->
+<!-- JavaScript Application Engine -->
 <script src="script.js" defer></script>
 </body>
 </html>

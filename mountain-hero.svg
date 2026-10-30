@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <!-- Background sky gradient -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3B2F99" stop-opacity="0" />
+      <stop offset="100%" stop-color="#241968" stop-opacity="0.4" />
+    </linearGradient>
+
+    <!-- Sun glow -->
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFDE6A" stop-opacity="1" />
+      <stop offset="35%" stop-color="#FFA834" stop-opacity="0.85" />
+      <stop offset="70%" stop-color="#FF7B24" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#FF5A36" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Mountain gradients -->
+    <!-- Far mountain (soft purple-indigo haze) -->
+    <linearGradient id="mtnFar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8072DC" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#493B9E" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Mid mountain left -->
+    <linearGradient id="mtnMidL" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#5C4EB8" />
+      <stop offset="100%" stop-color="#36287A" />
+    </linearGradient>
+
+    <!-- Mid mountain right (shaded) -->
+    <linearGradient id="mtnMidR" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4B3C9E" />
+      <stop offset="100%" stop-color="#291D63" />
+    </linearGradient>
+
+    <!-- High peak (summit) lighted facet -->
+    <linearGradient id="peakLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6F60D8" />
+      <stop offset="50%" stop-color="#5142B5" />
+      <stop offset="100%" stop-color="#2F217A" />
+    </linearGradient>
+
+    <!-- High peak (summit) shadow facet -->
+    <linearGradient id="peakShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3E3094" />
+      <stop offset="60%" stop-color="#281C6E" />
+      <stop offset="100%" stop-color="#190F4D" />
+    </linearGradient>
+
+    <!-- Foreground mountain range -->
+    <linearGradient id="mtnFore" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#241761" />
+      <stop offset="100%" stop-color="#140B3B" />
+    </linearGradient>
+
+    <!-- Cloud soft gradient -->
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.05" />
+    </linearGradient>
+
+    <!-- Summit glow -->
+    <radialGradient id="summitGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFDD78" stop-opacity="0.45" />
+      <stop offset="100%" stop-color="#FFDD78" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Sky soft aura -->
+  <rect x="0" y="0" width="600" height="360" fill="url(#skyGrad)" />
+
+  <!-- Warm Golden Sun behind the peaks -->
+  <circle cx="340" cy="150" r="110" fill="url(#sunGlow)" />
+  <circle cx="340" cy="150" r="54" fill="#FFE57F" opacity="0.95" />
+  <circle cx="340" cy="150" r="46" fill="#FFF2B2" />
+
+  <!-- High Soft Clouds -->
+  <!-- Cloud 1 (Left top) -->
+  <path d="M 60 110 Q 75 90 105 92 Q 135 80 165 98 Q 195 95 205 115 Q 215 130 195 138 Q 130 142 75 135 Q 55 128 60 110 Z" fill="url(#cloudGrad)" />
+  <!-- Cloud 2 (Behind sun right) -->
+  <path d="M 390 90 Q 410 70 440 72 Q 470 65 495 82 Q 525 80 540 100 Q 550 118 530 125 Q 460 130 400 120 Q 380 110 390 90 Z" fill="url(#cloudGrad)" />
+  <!-- Cloud 3 (Mid right drift) -->
+  <path d="M 460 170 Q 480 155 510 158 Q 535 152 555 168 Q 575 178 560 192 Q 500 198 465 188 Q 450 180 460 170 Z" fill="url(#cloudGrad)" opacity="0.6" />
+
+  <!-- Layer 1: Distant Mountains (soft purple atmosphere) -->
+  <polygon points="40,360 120,220 210,360" fill="url(#mtnFar)" opacity="0.55" />
+  <polygon points="420,360 510,210 590,360" fill="url(#mtnFar)" opacity="0.6" />
+  <polygon points="260,360 380,180 470,360" fill="url(#mtnFar)" opacity="0.45" />
+
+  <!-- Layer 2: Mid-distance Mountain Range -->
+  <!-- Left ridge -->
+  <polygon points="0,360 90,240 180,195 270,360" fill="url(#mtnMidL)" />
+  <polygon points="180,195 270,360 140,360" fill="url(#mtnMidR)" opacity="0.6" />
+
+  <!-- Right ridge -->
+  <polygon points="340,360 440,190 540,250 600,360" fill="url(#mtnMidR)" />
+  <polygon points="440,190 540,250 490,360" fill="url(#mtnMidL)" opacity="0.4" />
+
+  <!-- Layer 3: Central Highest Peak (The Summit) -->
+  <!-- Left illuminated facet -->
+  <polygon points="170,360 310,75 328,160 345,360" fill="url(#peakLight)" />
+  <!-- Right shadowed facet -->
+  <polygon points="310,75 480,360 345,360 328,160" fill="url(#peakShadow)" />
+  <!-- Ridge line highlight facet -->
+  <polyline points="310,75 328,160 345,360" stroke="#8777F0" stroke-width="1.5" stroke-linecap="round" opacity="0.8" />
+
+  <!-- Summit golden halo accent -->
+  <circle cx="310" cy="75" r="40" fill="url(#summitGlow)" />
+
+  <!-- Layer 4: Foreground mountain base / overlapping ridges -->
+  <polygon points="-20,360 110,285 240,360" fill="url(#mtnFore)" opacity="0.95" />
+  <polygon points="210,360 350,290 490,360" fill="url(#mtnFore)" />
+  <polygon points="430,360 520,300 620,360" fill="url(#mtnFore)" opacity="0.9" />
+
+  <!-- Minimal Dark-Blue Pine Trees near base -->
+  <!-- Cluster Left -->
+  <polygon points="65,360 72,325 79,360" fill="#0C0626" />
+  <polygon points="76,360 84,318 92,360" fill="#0E082E" />
+  <polygon points="88,360 94,330 100,360" fill="#0C0626" />
+  <polygon points="102,360 110,312 118,360" fill="#130B38" />
+  <polygon points="115,360 122,326 129,360" fill="#0C0626" />
+  <polygon points="135,360 144,320 153,360" fill="#130B38" />
+
+  <!-- Cluster Center-Right -->
+  <polygon points="380,360 388,328 396,360" fill="#0E082E" />
+  <polygon points="394,360 402,316 410,360" fill="#130B38" />
+  <polygon points="408,360 415,330 422,360" fill="#0C0626" />
+  <polygon points="430,360 439,322 448,360" fill="#130B38" />
+  <polygon points="452,360 460,332 468,360" fill="#0E082E" />
+  <polygon points="480,360 488,318 496,360" fill="#0C0626" />
+  <polygon points="505,360 514,325 523,360" fill="#0E082E" />
+
+  <!-- Summit Detail: Tiny Person standing on the Highest Peak -->
+  <!-- Summit is at (310, 75) -->
+  <g id="summitPerson" transform="translate(305, 45)">
+    <!-- Person silhouette (dark indigo with slight golden rim) -->
+    <!-- Head -->
+    <circle cx="5" cy="4" r="2.5" fill="#FFEAA0" />
+    <circle cx="5" cy="4" r="2.2" fill="#150B42" />
+
+    <!-- Torso / Jacket -->
+    <path d="M 3 7.5 L 7 7.5 L 6.5 17 L 3.5 17 Z" fill="#150B42" />
+
+    <!-- Raised Left Arm cheering / holding flag -->
+    <path d="M 3.5 8.5 L -1 5 L -1.5 6.5" stroke="#150B42" stroke-width="1.2" stroke-linecap="round" />
+    <!-- Right Arm -->
+    <path d="M 6.5 8.5 L 10 11" stroke="#150B42" stroke-width="1.2" stroke-linecap="round" />
+
+    <!-- Legs -->
+    <path d="M 4 17 L 2.5 28" stroke="#150B42" stroke-width="1.4" stroke-linecap="round" />
+    <path d="M 6 17 L 7.5 28" stroke="#150B42" stroke-width="1.4" stroke-linecap="round" />
+
+    <!-- Flagpole on summit next to person -->
+    <line x1="-3" y1="0" x2="-3" y2="30" stroke="#FFEAA0" stroke-width="1.5" stroke-linecap="round" />
+    <!-- Flag waving (warm golden-orange hackathon pennant) -->
+    <path d="M -3 1 Q -10 4 -18 2 Q -12 8 -3 10 Z" fill="#FFA834" />
+    <path d="M -3 2 Q -9 5 -16 3 Q -11 8 -3 9 Z" fill="#FF5A36" opacity="0.75" />
+    <!-- Flag tip sparkle -->
+    <circle cx="-3" cy="0" r="1.5" fill="#FFF2B2" />
+  </g>
+
+  <!-- Atmospheric low fog bands -->
+  <path d="M 0 320 Q 150 305 300 320 T 600 315 L 600 360 L 0 360 Z" fill="#1A1046" opacity="0.4" />
+  <path d="M 0 335 Q 200 325 400 338 T 600 332 L 600 360 L 0 360 Z" fill="#120934" opacity="0.6" />
+</svg>

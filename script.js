@@ -1,89 +1,125 @@
 // ================================================================
-// HabitFlow — Habit Tracker
+// HabitFlow — Habit Tracker & Consistency Dashboard
 // Hack Day Haldia'26 | Team Titan
-// Stack: Vanilla HTML + CSS + JS | Data: localStorage
+// Stack: Vanilla HTML + CSS + JS | Persistence: localStorage
+// Strict Icon System: Lucide Outline Icons (No Emojis)
 // ================================================================
 
 'use strict';
 
 // ----------------------------------------------------------------
-// CONSTANTS
+// CONSTANTS & LUCIDE SVG ICON DEFINITIONS
 // ----------------------------------------------------------------
 const STORAGE_KEY = 'hackday-haldia-team-titan';
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
 const CATEGORIES = ['health', 'learning', 'mindfulness', 'fitness', 'productivity', 'other'];
-const CATEGORY_EMOJI = {
-  health: '🏃', learning: '📚', mindfulness: '🧘',
-  fitness: '💪', productivity: '⚡', other: '✨'
-};
+
 const CATEGORY_LABEL = {
-  health: 'Health', learning: 'Learning', mindfulness: 'Mindfulness',
-  fitness: 'Fitness', productivity: 'Productivity', other: 'Other'
+  health: 'Health',
+  learning: 'Learning',
+  mindfulness: 'Mindfulness',
+  fitness: 'Fitness',
+  productivity: 'Productivity',
+  other: 'Other'
+};
+
+// Lucide icon names corresponding to categories
+const CATEGORY_ICON_NAME = {
+  health: 'heart-pulse',
+  learning: 'book-open',
+  mindfulness: 'brain',
+  fitness: 'dumbbell',
+  productivity: 'zap',
+  other: 'compass'
 };
 
 const HABIT_COLORS = [
-  '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
-  '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#6366f1'
+  '#6554F0', '#8B5CF6', '#EC4899', '#F43F5E', '#F97316',
+  '#EAB308', '#16A675', '#0284C7', '#06B6D4', '#64748B'
 ];
 
 const DAY_NAMES_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const DAY_NAMES_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_NAMES_FULL  = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * Lucide Outline SVG Icon Library (SVG strings without emojis)
+ */
+function lucideIcon(name, className = 'icon') {
+  const icons = {
+    // Nav & System
+    'layout-dashboard': '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+    'list-checks':      '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+    'chart-combined':   '<path d="M12 16v5"/><path d="M16 14v7"/><path d="M20 10v11"/><path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/><path d="M4 18v3"/><path d="M8 14v7"/>',
+    'calendar-days':    '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>',
+    'timer':            '<line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="12" y1="14" y2="8"/><circle cx="12" cy="14" r="8"/>',
+    'settings':         '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    'archive':          '<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+    'layers':           '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+    'flame':            '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+    'trophy':           '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
+    'circle-check':     '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+    'check':            '<polyline points="20 6 9 17 4 12"/>',
+    'plus':             '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    'pencil':           '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
+    'trash-2':          '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+    'bell':             '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    'sparkles':         '<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>',
+    'target':           '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+    'rotate-ccw':       '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    'trending-up':      '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+    'clock':            '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    'download':         '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+    'upload':           '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+    'chevron-right':    '<path d="m9 18 6-6-6-6"/>',
+    'calendar':         '<rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
+    'search':           '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+
+    // Category Specific Lucide Icons
+    'heart-pulse':      '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+    'book-open':        '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+    'brain':            '<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"/>',
+    'dumbbell':         '<path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/>',
+    'zap':              '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    'compass':          '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>'
+  };
+
+  const body = icons[name] || icons['target'];
+  return `<svg class="${className}" viewBox="0 0 24 24">${body}</svg>`;
+}
 
 // ----------------------------------------------------------------
-// STATE
+// STATE MANAGEMENT & PERSISTENCE
 // ----------------------------------------------------------------
-/**
- * App state schema:
- * {
- *   habits: [
- *     {
- *       id: string,
- *       name: string,          -- HTML-escaped
- *       description: string,   -- HTML-escaped
- *       category: string,
- *       color: string,
- *       weeklyTarget: number (1-7),
- *       createdAt: string (YYYY-MM-DD),
- *       archived: boolean,
- *       reminder: {
- *         enabled: boolean,
- *         time: string (HH:MM),
- *         days: number[]  (0=Sun … 6=Sat)
- *       }
- *     }
- *   ],
- *   checkins: {
- *     [habitId]: string[]   // sorted YYYY-MM-DD strings, unique
- *   },
- *   theme: 'light' | 'dark'
- * }
- */
 let state = {
   habits: [],
   checkins: {},
   theme: 'light'
 };
 
-// UI ephemeral state (not persisted)
+// UI ephemeral state
 let ui = {
   currentPage: 'dashboard',
   habitsFilter: 'all',
   selectedColor: HABIT_COLORS[0],
-  selectedReminderDays: [0,1,2,3,4,5,6],
+  selectedReminderDays: [0, 1, 2, 3, 4, 5, 6],
   backdateSelectedHabitId: null,
+  searchQuery: '',
+
+  // Focus Timer state
+  timerMode: 'pomodoro', // 'pomodoro' (25m), 'shortBreak' (5m), 'longBreak' (15m)
+  timerSecondsLeft: 25 * 60,
+  timerInterval: null,
+  timerRunning: false,
 };
 
-// ----------------------------------------------------------------
-// PERSISTENCE
-// ----------------------------------------------------------------
 function save() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) {
-    console.warn('HabitFlow: Could not save to localStorage.', e);
+    console.warn('HabitFlow: Storage full or disabled.', e);
   }
 }
 
@@ -93,23 +129,25 @@ function load() {
     if (!raw) return;
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === 'object') {
-      if (Array.isArray(parsed.habits)) state.habits = parsed.habits.map(migrateHabit);
+      if (Array.isArray(parsed.habits)) {
+        state.habits = parsed.habits.map(migrateHabit);
+      }
       if (parsed.checkins && typeof parsed.checkins === 'object') {
-        // Sanitise: ensure each value is an array of strings
         const clean = {};
         for (const [k, v] of Object.entries(parsed.checkins)) {
           clean[k] = Array.isArray(v) ? v.filter(d => typeof d === 'string') : [];
         }
         state.checkins = clean;
       }
-      if (parsed.theme === 'dark' || parsed.theme === 'light') state.theme = parsed.theme;
+      if (parsed.theme === 'dark' || parsed.theme === 'light') {
+        state.theme = parsed.theme;
+      }
     }
   } catch (e) {
-    console.warn('HabitFlow: Could not load saved data — starting fresh.', e);
+    console.warn('HabitFlow: Error parsing stored data. Starting fresh.', e);
   }
 }
 
-/** Ensure habit objects have all required fields (forward-compat migration) */
 function migrateHabit(h) {
   return {
     id:           h.id            || uid(),
@@ -123,19 +161,18 @@ function migrateHabit(h) {
     reminder: {
       enabled: h.reminder?.enabled  ?? false,
       time:    h.reminder?.time     || '08:00',
-      days:    Array.isArray(h.reminder?.days) ? h.reminder.days : [0,1,2,3,4,5,6]
+      days:    Array.isArray(h.reminder?.days) ? h.reminder.days : [0, 1, 2, 3, 4, 5, 6]
     }
   };
 }
 
 // ----------------------------------------------------------------
-// UTILITY
+// UTILITIES
 // ----------------------------------------------------------------
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-/** HTML-escape user content before storing/rendering */
 function esc(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -145,19 +182,16 @@ function esc(str) {
     .replace(/'/g, '&#039;');
 }
 
-/** Decode HTML-escaped string back to plain text (for form pre-fill) */
 function unesc(str) {
   const div = document.createElement('div');
   div.innerHTML = str;
   return div.textContent;
 }
 
-/** Today as YYYY-MM-DD in local time */
 function todayStr() {
   return localDateStr(new Date());
 }
 
-/** Date → YYYY-MM-DD (local time) */
 function localDateStr(d) {
   const y  = d.getFullYear();
   const m  = String(d.getMonth() + 1).padStart(2, '0');
@@ -165,24 +199,20 @@ function localDateStr(d) {
   return `${y}-${m}-${dy}`;
 }
 
-/** YYYY-MM-DD string → local midnight Date */
 function parseDate(str) {
   const [y, m, d] = str.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
 
-/** Calendar-day difference b → a (positive if b is later) */
 function daysDiff(a, b) {
   return Math.round((parseDate(b) - parseDate(a)) / 86400000);
 }
 
-/** YYYY-MM-DD → human-readable short date */
 function formatDate(str) {
   const d = parseDate(str);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-/** Return YYYY-MM-DD for N days before today */
 function daysAgo(n) {
   const d = new Date();
   d.setDate(d.getDate() - n);
@@ -193,8 +223,24 @@ function clamp(val, min, max) {
   return Math.min(Math.max(val, min), max);
 }
 
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16) || 101;
+  const g = parseInt(hex.slice(3, 5), 16) || 84;
+  const b = parseInt(hex.slice(5, 7), 16) || 240;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function setEl(sel, text) {
+  const el = $(sel);
+  if (el) el.textContent = text;
+}
+
+function later(fn, ms = 0) {
+  setTimeout(fn, ms);
+}
+
 // ----------------------------------------------------------------
-// DATA — Habits
+// DATA OPERATIONS — HABITS & CHECK-INS
 // ----------------------------------------------------------------
 function getActiveHabits()   { return state.habits.filter(h => !h.archived); }
 function getArchivedHabits() { return state.habits.filter(h =>  h.archived); }
@@ -210,7 +256,7 @@ function createHabit(data) {
     weeklyTarget: Math.min(7, Math.max(1, Number(data.weeklyTarget))),
     createdAt:    todayStr(),
     archived:     false,
-    reminder: { enabled: false, time: '08:00', days: [0,1,2,3,4,5,6] }
+    reminder: { enabled: false, time: '08:00', days: [0, 1, 2, 3, 4, 5, 6] }
   };
   state.habits.push(habit);
   state.checkins[habit.id] = [];
@@ -240,14 +286,11 @@ function restoreHabit(id) {
 }
 
 function deleteHabitPermanently(id) {
-  state.habits  = state.habits.filter(h => h.id !== id);
+  state.habits = state.habits.filter(h => h.id !== id);
   delete state.checkins[id];
   save();
 }
 
-// ----------------------------------------------------------------
-// DATA — Check-ins
-// ----------------------------------------------------------------
 function getCheckins(habitId) {
   return state.checkins[habitId] || [];
 }
@@ -256,16 +299,12 @@ function isCheckedIn(habitId, dateStr) {
   return getCheckins(habitId).includes(dateStr);
 }
 
-/**
- * Toggle a check-in for a habit on a given date.
- * Returns 'added' or 'removed'.
- */
 function toggleCheckin(habitId, dateStr) {
   if (!state.checkins[habitId]) state.checkins[habitId] = [];
   const idx = state.checkins[habitId].indexOf(dateStr);
   if (idx === -1) {
     state.checkins[habitId].push(dateStr);
-    state.checkins[habitId].sort(); // keep sorted for streak logic
+    state.checkins[habitId].sort();
     save();
     return 'added';
   } else {
@@ -278,27 +317,16 @@ function toggleCheckin(habitId, dateStr) {
 // ----------------------------------------------------------------
 // STREAK ENGINE
 // ----------------------------------------------------------------
-/**
- * Calculate current + longest streak for a habit.
- *
- * Rules:
- * - A streak is a run of consecutive calendar days with a check-in.
- * - "Current" streak: consecutive days ending on TODAY if today is done,
- *   or ending on YESTERDAY if today is not yet done (user still has today).
- * - "Longest" streak: the longest such consecutive run ever.
- */
 function calcStreaks(habitId) {
   const checkins = getCheckins(habitId);
   if (!checkins.length) return { current: 0, longest: 0 };
 
-  const dateSet = new Set(checkins);
-  const today   = todayStr();
+  const dateSet   = new Set(checkins);
+  const today     = todayStr();
   const yesterday = daysAgo(1);
+  const sorted    = [...dateSet].sort();
 
-  // Sorted unique dates
-  const sorted = [...dateSet].sort();
-
-  // ---- LONGEST ----
+  // Longest streak
   let longest = 1;
   let run     = 1;
   for (let i = 1; i < sorted.length; i++) {
@@ -310,8 +338,7 @@ function calcStreaks(habitId) {
     }
   }
 
-  // ---- CURRENT ----
-  // Start anchor: today if done, else yesterday
+  // Current streak
   const anchor = dateSet.has(today) ? today : yesterday;
   let current  = 0;
 
@@ -335,18 +362,15 @@ function calcStreaks(habitId) {
 }
 
 // ----------------------------------------------------------------
-// STATISTICS
+// STATISTICS & WEEKLY DATA
 // ----------------------------------------------------------------
-
-/** Monday-anchored week start for a date string */
 function getWeekStart(dateStr) {
   const d   = parseDate(dateStr);
   const day = d.getDay(); // 0=Sun
-  d.setDate(d.getDate() - ((day + 6) % 7));
+  d.setDate(d.getDate() - ((day + 6) % 7)); // Monday start
   return localDateStr(d);
 }
 
-/** Count check-ins for a habit in the 7 days starting from weekStartStr */
 function getCheckinsByWeek(habitId, weekStartStr) {
   return getCheckins(habitId).filter(d => {
     const diff = daysDiff(weekStartStr, d);
@@ -354,7 +378,6 @@ function getCheckinsByWeek(habitId, weekStartStr) {
   }).length;
 }
 
-/** ISO week number for a date string */
 function isoWeekNum(dateStr) {
   const d = parseDate(dateStr);
   const tmp = new Date(d);
@@ -364,7 +387,6 @@ function isoWeekNum(dateStr) {
   return 1 + Math.round(((tmp - w1) / 86400000 - 3 + ((w1.getDay() + 6) % 7)) / 7);
 }
 
-/** Last N weeks of total completions (all active habits combined) */
 function getWeeklyData(n = 8) {
   const active = getActiveHabits();
   const result = [];
@@ -380,7 +402,6 @@ function getWeeklyData(n = 8) {
   return result;
 }
 
-/** Last N months of total completions (all active habits combined) */
 function getMonthlyData(n = 6) {
   const active = getActiveHabits();
   const result = [];
@@ -401,7 +422,6 @@ function getMonthlyData(n = 6) {
   return result;
 }
 
-/** Completion rate for a habit in the current Monday-anchored week (0–1) */
 function weeklyCompletionRate(habitId) {
   const habit = getHabitById(habitId);
   if (!habit) return 0;
@@ -409,7 +429,6 @@ function weeklyCompletionRate(habitId) {
   return Math.min(1, done / habit.weeklyTarget);
 }
 
-/** Weekly consistency score across all active habits (0–100) */
 function consistencyScore() {
   const active = getActiveHabits();
   if (!active.length) return 0;
@@ -417,24 +436,25 @@ function consistencyScore() {
   return Math.round(avg * 100);
 }
 
-// ----------------------------------------------------------------
-// HEATMAP DATA
-// ----------------------------------------------------------------
 /**
- * Build heatmap cells for the last `weeks` weeks.
- * Cells are ordered oldest→newest, 7 cells per column (Sun→Sat).
- *
- * @param {string|null} habitId  — null = overall (all active habits)
- * @param {number}      weeks    — number of columns
- * @returns {{ date, count, level }[]}
+ * Returns total count of unique days where ANY habit was checked in
  */
+function getTotalActiveDays() {
+  const allDates = new Set();
+  Object.values(state.checkins).forEach(arr => {
+    if (Array.isArray(arr)) arr.forEach(d => allDates.add(d));
+  });
+  return allDates.size;
+}
+
+// ----------------------------------------------------------------
+// HEATMAP BUILDER & RENDERER
+// ----------------------------------------------------------------
 function buildHeatmapData(habitId, weeks = 12) {
   const totalDays = weeks * 7;
-
-  // Align end to the nearest coming Saturday (inclusive of today)
-  const endDate  = new Date();
-  const dow      = endDate.getDay();
-  endDate.setDate(endDate.getDate() + (6 - dow));
+  const endDate   = new Date();
+  const dow       = endDate.getDay();
+  endDate.setDate(endDate.getDate() + (6 - dow)); // align to upcoming Saturday
 
   const active = habitId ? null : getActiveHabits();
   const cells  = [];
@@ -467,10 +487,8 @@ function buildHeatmapData(habitId, weeks = 12) {
   return cells;
 }
 
-// ----------------------------------------------------------------
-// RENDER HELPERS — Heatmap
-// ----------------------------------------------------------------
 function renderHeatmap(cells, container, habitId = null) {
+  if (!container) return;
   container.innerHTML = '';
 
   const weeks = Math.round(cells.length / 7);
@@ -484,24 +502,26 @@ function renderHeatmap(cells, container, habitId = null) {
   cols.forEach(col => {
     const lbl       = document.createElement('div');
     lbl.className   = 'heatmap-month-label';
-    lbl.style.width = '14px';
+    lbl.style.width = '15px';
     const mo = parseDate(col[0].date).getMonth();
-    if (mo !== lastMonth) { lbl.textContent = MONTH_NAMES_SHORT[mo]; lastMonth = mo; }
+    if (mo !== lastMonth) {
+      lbl.textContent = MONTH_NAMES_SHORT[mo];
+      lastMonth = mo;
+    }
     monthRow.appendChild(lbl);
   });
 
-  // Weekday labels (left column)
+  // Weekday labels
   const dayLabels = document.createElement('div');
   dayLabels.className = 'heatmap-labels-left';
   for (let r = 0; r < 7; r++) {
     const lbl       = document.createElement('div');
     lbl.className   = 'heatmap-day-label';
-    // Show only Mon, Wed, Fri to avoid crowding
     lbl.textContent = [1, 3, 5].includes(r) ? DAY_NAMES_SHORT[r] : '';
     dayLabels.appendChild(lbl);
   }
 
-  // Grid
+  // Grid columns
   const gridArea = document.createElement('div');
   gridArea.className = 'heatmap-grid-area';
   gridArea.appendChild(monthRow);
@@ -535,7 +555,7 @@ function renderHeatmap(cells, container, habitId = null) {
   legend.className = 'heatmap-legend';
   legend.innerHTML = `
     <span>Less</span>
-    ${[0,1,2,3,4].map(l => `<div class="heatmap-legend-cell" style="background:var(--heat-${l})"></div>`).join('')}
+    ${[0, 1, 2, 3, 4].map(l => `<div class="heatmap-legend-cell" style="background:var(--heat-${l})"></div>`).join('')}
     <span>More</span>
   `;
   container.appendChild(legend);
@@ -566,18 +586,18 @@ function buildCellLabel(cell, habitId) {
 }
 
 function onCellHover(e) {
-  const el      = e.currentTarget;
-  const date    = el.getAttribute('data-date');
-  const count   = parseInt(el.getAttribute('data-count'), 10);
-  const hid     = el.getAttribute('data-heatmap-habit-id') ||
-                  el.closest('[data-heatmap-habit-id]')?.getAttribute('data-heatmap-habit-id') || null;
+  const el    = e.currentTarget;
+  const date  = el.getAttribute('data-date');
+  const count = parseInt(el.getAttribute('data-count'), 10);
+  const hid   = el.getAttribute('data-heatmap-habit-id') || null;
 
   let text;
   if (count === 0)  text = `${formatDate(date)} — No activity`;
-  else if (hid)     text = `${formatDate(date)} — ✓ Completed`;
+  else if (hid)     text = `${formatDate(date)} — Completed`;
   else              text = `${formatDate(date)} — ${count} habit${count !== 1 ? 's' : ''} done`;
 
   const tip = $('#heatmap-tooltip');
+  if (!tip) return;
   tip.textContent = text;
   tip.classList.add('visible');
 
@@ -594,23 +614,39 @@ function onCellHover(e) {
 }
 
 function hideTooltip() {
-  $('#heatmap-tooltip').classList.remove('visible');
+  $('#heatmap-tooltip')?.classList.remove('visible');
 }
 
 // ----------------------------------------------------------------
-// RENDER HELPERS — Bar Chart
+// RENDER HELPERS: Empty States & Charts (NO EMOJIS)
 // ----------------------------------------------------------------
+function renderEmptyState(title, desc, iconName = 'sparkles', btnLabel = '', btnId = '') {
+  return `
+    <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">
+        ${lucideIcon(iconName, 'icon icon-lg')}
+      </div>
+      <div class="empty-state-title">${esc(title)}</div>
+      <p class="empty-state-desc">${esc(desc)}</p>
+      ${btnLabel ? `<button class="btn btn-primary btn-sm" id="${btnId}">${lucideIcon('plus', 'icon icon-sm')} <span>${esc(btnLabel)}</span></button>` : ''}
+    </div>
+  `;
+}
+
 function renderBarChart(container, data) {
+  if (!container) return;
   if (!data.length || data.every(d => d.total === 0)) {
     container.innerHTML = `
       <div class="empty-state" style="padding:2rem 1rem">
-        <div style="font-size:2rem;margin-bottom:0.5rem">📊</div>
-        <div class="empty-state-title">No data yet</div>
-        <p class="empty-state-desc">Complete some habits to see your chart.</p>
+        <div class="empty-state-icon" style="width:50px;height:50px;margin-bottom:0.75rem;">
+          ${lucideIcon('chart-combined', 'icon')}
+        </div>
+        <div class="empty-state-title">No activity recorded</div>
+        <p class="empty-state-desc">Complete habits to visualize your progress over time.</p>
       </div>`;
     return;
   }
-  const max  = Math.max(...data.map(d => d.total), 1);
+  const max = Math.max(...data.map(d => d.total), 1);
   container.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'chart-bar-wrap';
@@ -631,149 +667,178 @@ function renderBarChart(container, data) {
 }
 
 // ----------------------------------------------------------------
-// RENDER HELPERS — Empty State
+// D. FOUR SUMMARY CARDS (Calculated from actual data)
 // ----------------------------------------------------------------
-function renderEmptyState(title, desc, emoji = '🌱', btnLabel = '', btnId = '') {
-  return `
-    <div class="empty-state">
-      <div class="empty-state-icon" aria-hidden="true" style="font-size:1.75rem">${emoji}</div>
-      <div class="empty-state-title">${esc(title)}</div>
-      <p class="empty-state-desc">${esc(desc)}</p>
-      ${btnLabel ? `<button class="btn btn-primary btn-sm" id="${btnId}">${esc(btnLabel)}</button>` : ''}
-    </div>
-  `;
-}
+function renderSummaryCards() {
+  const statGrid = $('#dash-stat-grid');
+  if (!statGrid) return;
 
-// ----------------------------------------------------------------
-// RENDER — Helpers
-// ----------------------------------------------------------------
-function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-function svgIcon(name) {
-  const icons = {
-    layers:        '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
-    'check-circle':'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-    zap:           '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
-    trophy:        '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
-    bell:          '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
-    edit:          '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
-    calendar:      '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-  };
-  return icons[name] || '';
-}
-
-function statCardHTML(label, value, sub, color, iconName) {
-  const bg = hexToRgba(color, 0.1);
-  return `
-    <div class="stat-card">
-      <div class="stat-icon" style="background:${bg}">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          ${svgIcon(iconName)}
-        </svg>
-      </div>
-      <div class="stat-value">${esc(String(value))}</div>
-      <div class="stat-label">${esc(label)}</div>
-      <div class="stat-sub">${esc(sub)}</div>
-    </div>
-  `;
-}
-
-function getMotivationMessage(habits) {
-  const today = todayStr();
-  const done  = habits.filter(h => isCheckedIn(h.id, today)).length;
-  const total = habits.length;
-  if (total === 0) return { emoji: '🚀', title: 'Ready to build great habits?',  body: 'Add your first habit to start your journey.' };
-  if (done === total) return { emoji: '🔥', title: "You've crushed it today!",    body: 'All habits completed. Keep the streak alive!' };
-  if (done === 0)   return { emoji: '💪', title: "Let's get started!",            body: `You have ${total} habit${total !== 1 ? 's' : ''} to complete today.` };
-  const pct = Math.round((done / total) * 100);
-  if (pct >= 50)    return { emoji: '⚡', title: "You're halfway there!",          body: `${total - done} more to go — keep it up!` };
-  return              { emoji: '🌱', title: 'Build momentum!',                    body: `${done} of ${total} done — every check-in counts.` };
-}
-
-// ----------------------------------------------------------------
-// RENDER — Dashboard
-// ----------------------------------------------------------------
-function renderDashboard() {
   const today        = todayStr();
   const activeHabits = getActiveHabits();
-
-  // Greeting
-  const hour    = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  setEl('#greeting-text', `${greeting}! 👋`);
-  setEl('#today-date-text', new Date().toLocaleDateString('en-US',
-    { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }));
-
-  // Motivation banner
-  const motivDiv = $('#dash-motivation');
-  if (motivDiv) {
-    const msg = getMotivationMessage(activeHabits);
-    motivDiv.innerHTML = msg ? `
-      <div class="motivation-banner">
-        <div class="motivation-banner-emoji">${msg.emoji}</div>
-        <div class="motivation-banner-text">
-          <strong>${esc(msg.title)}</strong>
-          ${esc(msg.body)}
-        </div>
-      </div>` : '';
-  }
-
-  // Stats
+  const totalActive  = activeHabits.length;
   const completedToday = activeHabits.filter(h => isCheckedIn(h.id, today)).length;
-  const totalActive    = activeHabits.length;
 
-  let bestStreak = 0, curStreak = 0;
+  // Best & current streaks
+  let maxCurrentStreak = 0;
   activeHabits.forEach(h => {
     const s = calcStreaks(h.id);
-    bestStreak = Math.max(bestStreak, s.longest);
-    curStreak  = Math.max(curStreak,  s.current);
+    if (s.current > maxCurrentStreak) maxCurrentStreak = s.current;
   });
 
-  const ws = getWeekStart(today);
-  let weekTotal = 0, weekTarget = 0;
-  activeHabits.forEach(h => {
-    weekTotal  += getCheckinsByWeek(h.id, ws);
-    weekTarget += h.weeklyTarget;
+  // Completion rate today
+  const completionRatePct = totalActive > 0 ? Math.round((completedToday / totalActive) * 100) : 0;
+
+  // Days active (total distinct check-in dates in history)
+  const totalActiveDays = getTotalActiveDays();
+
+  statGrid.innerHTML = `
+    <!-- Card 1: Total Habits -->
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:#ECE9FE;color:#6554F0;">
+          ${lucideIcon('layers', 'icon')}
+        </div>
+      </div>
+      <div class="stat-value">${totalActive}</div>
+      <div class="stat-label">Total Habits</div>
+      <div class="stat-sub">${totalActive === 1 ? '1 active goal' : `${totalActive} active goals`}</div>
+    </div>
+
+    <!-- Card 2: Current Streak -->
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:#FFF4ED;color:#F97316;">
+          ${lucideIcon('flame', 'icon')}
+        </div>
+      </div>
+      <div class="stat-value">${maxCurrentStreak} <span style="font-size:0.9375rem;font-weight:600;color:var(--text-secondary);">days</span></div>
+      <div class="stat-label">Current Streak</div>
+      <div class="stat-sub">Keep the momentum</div>
+    </div>
+
+    <!-- Card 3: Completion Rate -->
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:#E8F8F2;color:#16A675;">
+          ${lucideIcon('circle-check', 'icon')}
+        </div>
+      </div>
+      <div class="stat-value">${completionRatePct}%</div>
+      <div class="stat-label">Completion Rate</div>
+      <div class="stat-sub">${completedToday} of ${totalActive} done today</div>
+    </div>
+
+    <!-- Card 4: Days Active -->
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:#E0F2FE;color:#0284C7;">
+          ${lucideIcon('calendar', 'icon')}
+        </div>
+      </div>
+      <div class="stat-value">${totalActiveDays}</div>
+      <div class="stat-label">Days Active</div>
+      <div class="stat-sub">All-time consistency</div>
+    </div>
+  `;
+}
+
+// ----------------------------------------------------------------
+// WEEKLY PROGRESS BARS (Right Column Widget)
+// ----------------------------------------------------------------
+function renderWeeklyProgressBars() {
+  const container = $('#weekly-bars-container');
+  if (!container) return;
+
+  const todayStrVal = todayStr();
+  const ws = getWeekStart(todayStrVal);
+  const activeHabits = getActiveHabits();
+  const totalActive  = activeHabits.length || 1;
+
+  // Calculate checkins for Mon -> Sun of current week
+  const daysInfo = [
+    { name: 'Mo', offset: 0 },
+    { name: 'Tu', offset: 1 },
+    { name: 'We', offset: 2 },
+    { name: 'Th', offset: 3 },
+    { name: 'Fr', offset: 4 },
+    { name: 'Sa', offset: 5 },
+    { name: 'Su', offset: 6 }
+  ];
+
+  let completedDaysCount = 0;
+  const barsHTML = daysInfo.map(item => {
+    const d = new Date(parseDate(ws));
+    d.setDate(d.getDate() + item.offset);
+    const dStr = localDateStr(d);
+    const isToday = (dStr === todayStrVal);
+
+    // Count completions on this date
+    let doneCount = 0;
+    activeHabits.forEach(h => {
+      if (isCheckedIn(h.id, dStr)) doneCount++;
+    });
+
+    const pct = Math.min(100, Math.round((doneCount / totalActive) * 100));
+    if (pct > 0) completedDaysCount++;
+
+    return `
+      <div class="weekday-bar-col ${isToday ? 'today' : ''}" title="${item.name}: ${doneCount}/${totalActive} habits done">
+        <div class="weekday-bar-track">
+          <div class="weekday-bar-fill" style="height:${pct > 0 ? pct : 8}%;"></div>
+        </div>
+        <div class="weekday-bar-label">${item.name}</div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="weekday-bars-grid">
+      ${barsHTML}
+    </div>
+  `;
+
+  // Update header badge
+  const badge = $('#weekly-progress-badge');
+  if (badge) {
+    const score = consistencyScore();
+    badge.innerHTML = `
+      <span class="habit-tag" style="background:var(--primary-light);color:var(--primary);font-weight:700;">
+        ${lucideIcon('trending-up', 'icon icon-sm')} ${score}% Consistency
+      </span>
+    `;
+  }
+}
+
+// ----------------------------------------------------------------
+// RENDER — DASHBOARD
+// ----------------------------------------------------------------
+function renderDashboard() {
+  const todayDateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric'
   });
-  const weekPct = weekTarget > 0 ? Math.round((weekTotal / weekTarget) * 100) : 0;
+  setEl('#header-today-date', todayDateStr);
 
-  const statGrid = $('#dash-stat-grid');
-  if (statGrid) {
-    statGrid.innerHTML =
-      statCardHTML('Active Habits',    totalActive,             'habits tracked',                    '#3b82f6', 'layers')       +
-      statCardHTML('Completed Today',  `${completedToday}/${totalActive}`, 'check-ins today',         '#22c55e', 'check-circle') +
-      statCardHTML('Current Streak',   curStreak,               `day${curStreak  !== 1 ? 's' : ''} in a row`, '#f59e0b', 'zap') +
-      statCardHTML('Best Streak',      bestStreak,              `day${bestStreak !== 1 ? 's' : ''} record`,    '#8b5cf6', 'trophy');
-  }
+  const fullTodayStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'short', day: 'numeric'
+  });
+  setEl('#today-checklist-sub', `Schedule for ${fullTodayStr}`);
 
-  // Progress ring
-  const pct          = totalActive > 0 ? Math.round((completedToday / totalActive) * 100) : 0;
-  const circumference = 2 * Math.PI * 40;
-  const offset        = circumference - (pct / 100) * circumference;
-  const ringFill = $('#ring-fill');
-  if (ringFill) {
-    ringFill.style.strokeDasharray  = circumference;
-    ringFill.style.strokeDashoffset = offset;
-    ringFill.style.stroke = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#3b82f6';
-  }
-  setEl('#ring-pct',   `${pct}%`);
-  setEl('#ring-label', `${completedToday} of ${totalActive} done`);
-  setEl('#today-checklist-sub', weekPct >= 100
-    ? '🎉 Weekly target hit!' : `${weekPct}% of weekly target done`);
+  // Summary Cards
+  renderSummaryCards();
 
+  // Today's Checklist
   renderTodayChecklist();
 
-  // Overall heatmap
+  // Weekly Progress Bars
+  renderWeeklyProgressBars();
+
+  // Overall Heatmap
   const heatmapCont = $('#overall-heatmap-container');
   if (heatmapCont) {
-    if (!activeHabits.length) {
+    const active = getActiveHabits();
+    if (!active.length) {
       heatmapCont.innerHTML = renderEmptyState(
-        'No habits yet', 'Add your first habit to start tracking.', '🌱', 'Add Habit', 'dash-empty-add-btn');
+        'No activity yet', 'Add your first habit to start logging your streaks.', 'sparkles', 'Add Habit', 'dash-empty-add-btn');
       later(() => $('#dash-empty-add-btn')?.addEventListener('click', openAddHabitModal));
     } else {
       renderHeatmap(buildHeatmapData(null, 12), heatmapCont);
@@ -782,18 +847,36 @@ function renderDashboard() {
 }
 
 // ----------------------------------------------------------------
-// RENDER — Today's Checklist
+// RENDER — TODAY'S HABITS CHECKLIST
 // ----------------------------------------------------------------
 function renderTodayChecklist() {
   const container = $('#today-checklist');
   if (!container) return;
   const today  = todayStr();
-  const active = getActiveHabits();
+  let active = getActiveHabits();
+
+  // Apply search query filter if typed
+  if (ui.searchQuery) {
+    const q = ui.searchQuery.toLowerCase();
+    active = active.filter(h =>
+      unesc(h.name).toLowerCase().includes(q) ||
+      unesc(h.description).toLowerCase().includes(q) ||
+      h.category.toLowerCase().includes(q)
+    );
+  }
 
   if (!active.length) {
-    container.innerHTML = renderEmptyState(
-      'No habits yet', 'Create your first habit to start tracking.', '🌱', 'Add Habit', 'checklist-add-btn');
-    later(() => $('#checklist-add-btn')?.addEventListener('click', openAddHabitModal));
+    if (ui.searchQuery) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding:2rem 1rem">
+          <div class="empty-state-title">No habits match "${esc(ui.searchQuery)}"</div>
+          <p class="empty-state-desc">Try clearing your search input.</p>
+        </div>`;
+    } else {
+      container.innerHTML = renderEmptyState(
+        'No habits tracked yet', 'Start by adding your first daily habit.', 'sparkles', 'Create Habit', 'checklist-add-btn');
+      later(() => $('#checklist-add-btn')?.addEventListener('click', openAddHabitModal));
+    }
     return;
   }
 
@@ -801,42 +884,49 @@ function renderTodayChecklist() {
   active.forEach(habit => {
     const checked  = isCheckedIn(habit.id, today);
     const streaks  = calcStreaks(habit.id);
+    const iconName = CATEGORY_ICON_NAME[habit.category] || 'compass';
     const item     = document.createElement('div');
     item.className = `checklist-item${checked ? ' completed' : ''}`;
     item.innerHTML = `
-      <button class="check-btn${checked ? ' checked' : ''}"
-        aria-label="${checked ? 'Undo' : 'Complete'} ${unesc(habit.name)}"
-        data-habit-id="${habit.id}">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-      </button>
+      <div class="cat-tile cat-${habit.category}" style="background:${hexToRgba(habit.color, 0.12)};color:${habit.color};">
+        ${lucideIcon(iconName, 'icon')}
+      </div>
       <div class="checklist-info">
         <div class="checklist-name">${habit.name}</div>
         <div class="checklist-meta">
-          <div class="habit-color-dot" style="background:${habit.color}"></div>
-          <span>${CATEGORY_EMOJI[habit.category] || ''} ${CATEGORY_LABEL[habit.category] || habit.category}</span>
-          ${streaks.current > 0 ? `<span class="streak-badge">🔥 ${streaks.current}</span>` : ''}
+          <span>${CATEGORY_LABEL[habit.category] || habit.category}</span>
+          ${streaks.current > 0 ? `
+            <span class="streak-badge">
+              ${lucideIcon('flame', 'icon')}
+              ${streaks.current}
+            </span>
+          ` : ''}
         </div>
       </div>
+      <button class="check-btn${checked ? ' checked' : ''}"
+        aria-label="${checked ? 'Undo' : 'Complete'} ${unesc(habit.name)}"
+        data-habit-id="${habit.id}">
+        ${lucideIcon('check', 'icon')}
+      </button>
     `;
+
     item.querySelector('.check-btn').addEventListener('click', e => {
       e.stopPropagation();
       const hid    = e.currentTarget.dataset.habitId;
       const result = toggleCheckin(hid, today);
       showToast(
-        result === 'added' ? `✓ ${unesc(habit.name)} done!` : `Undone: ${unesc(habit.name)}`,
+        result === 'added' ? `Completed: ${unesc(habit.name)}` : `Marked incomplete: ${unesc(habit.name)}`,
         result === 'added' ? 'success' : 'info'
       );
       render();
     });
+
     container.appendChild(item);
   });
 }
 
 // ----------------------------------------------------------------
-// RENDER — Habits Page
+// RENDER — MY HABITS PAGE
 // ----------------------------------------------------------------
 function renderHabitsPage() {
   const grid = $('#habits-grid');
@@ -846,7 +936,16 @@ function renderHabitsPage() {
   let habits   = getActiveHabits();
   if (filter !== 'all') habits = habits.filter(h => h.category === filter);
 
-  // Sync tab state
+  if (ui.searchQuery) {
+    const q = ui.searchQuery.toLowerCase();
+    habits = habits.filter(h =>
+      unesc(h.name).toLowerCase().includes(q) ||
+      unesc(h.description).toLowerCase().includes(q) ||
+      h.category.toLowerCase().includes(q)
+    );
+  }
+
+  // Sync category filter tabs
   $$('[data-filter]').forEach(btn => {
     const isActive = btn.dataset.filter === filter;
     btn.classList.toggle('active', isActive);
@@ -855,9 +954,9 @@ function renderHabitsPage() {
 
   if (!habits.length) {
     const msg = filter === 'all'
-      ? 'Add your first habit to start building consistency.'
-      : `No habits in the "${filter}" category yet.`;
-    grid.innerHTML = renderEmptyState('No habits found', msg, '🌱',
+      ? 'Add your first habit to begin tracking consistency.'
+      : `No active habits in the "${CATEGORY_LABEL[filter] || filter}" category.`;
+    grid.innerHTML = renderEmptyState('No habits found', msg, 'sparkles',
       filter === 'all' ? 'Add Habit' : '', filter === 'all' ? 'habits-empty-add-btn' : '');
     if (filter === 'all') {
       later(() => $('#habits-empty-add-btn')?.addEventListener('click', openAddHabitModal));
@@ -873,6 +972,7 @@ function renderHabitsPage() {
     const wrPct    = Math.round(weeklyCompletionRate(habit.id) * 100);
     const total    = getCheckins(habit.id).length;
     const miniCells = buildHeatmapData(habit.id, 4);
+    const iconName = CATEGORY_ICON_NAME[habit.category] || 'compass';
 
     const card = document.createElement('div');
     card.className = 'habit-card';
@@ -880,49 +980,56 @@ function renderHabitsPage() {
       <div class="habit-card-accent" style="background:${habit.color}"></div>
       <div class="habit-card-body">
         <div class="habit-card-header">
-          <div>
+          <div class="cat-tile cat-${habit.category}" style="background:${hexToRgba(habit.color, 0.12)};color:${habit.color};">
+            ${lucideIcon(iconName, 'icon')}
+          </div>
+          <div style="flex:1;min-width:0;">
             <div class="habit-card-name">${habit.name}</div>
-            <div style="display:flex;gap:0.375rem;margin-top:0.25rem;flex-wrap:wrap">
-              <span class="habit-tag">${CATEGORY_EMOJI[habit.category]||''} ${CATEGORY_LABEL[habit.category]||habit.category}</span>
-              <span class="habit-tag">🎯 ${habit.weeklyTarget}×/week</span>
+            <div style="display:flex;gap:0.375rem;margin-top:0.25rem;flex-wrap:wrap;">
+              <span class="habit-tag">${CATEGORY_LABEL[habit.category] || habit.category}</span>
+              <span class="habit-tag">${lucideIcon('target', 'icon icon-sm')} ${habit.weeklyTarget}x / week</span>
             </div>
           </div>
-          <div style="display:flex;gap:0.25rem;flex-shrink:0">
-            <button class="btn btn-ghost btn-icon-sm" data-action="edit" aria-label="Edit ${unesc(habit.name)}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svgIcon('edit')}</svg>
+          <div style="display:flex;gap:0.25rem;flex-shrink:0;">
+            <button class="btn btn-ghost btn-icon-sm" data-action="edit" aria-label="Edit ${unesc(habit.name)}" title="Edit habit">
+              ${lucideIcon('pencil', 'icon icon-sm')}
             </button>
-            <button class="btn btn-ghost btn-icon-sm" data-action="reminder" aria-label="Reminder for ${unesc(habit.name)}">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svgIcon('bell')}</svg>
+            <button class="btn btn-ghost btn-icon-sm" data-action="reminder" aria-label="Reminder for ${unesc(habit.name)}" title="Reminder settings">
+              ${lucideIcon('bell', 'icon icon-sm')}
             </button>
           </div>
         </div>
+
         ${habit.description ? `<div class="habit-card-desc">${habit.description}</div>` : ''}
+
         <div class="habit-card-stats">
           <div class="habit-card-stat">
             <span class="habit-card-stat-value">${streaks.current}</span>
-            <span class="habit-card-stat-label">🔥 Current</span>
+            <span class="habit-card-stat-label">${lucideIcon('flame', 'icon icon-sm')} Streak</span>
           </div>
           <div class="habit-card-stat">
             <span class="habit-card-stat-value">${streaks.longest}</span>
-            <span class="habit-card-stat-label">🏆 Longest</span>
+            <span class="habit-card-stat-label">${lucideIcon('trophy', 'icon icon-sm')} Best</span>
           </div>
           <div class="habit-card-stat">
             <span class="habit-card-stat-value">${wrPct}%</span>
-            <span class="habit-card-stat-label">📅 This week</span>
+            <span class="habit-card-stat-label">${lucideIcon('calendar', 'icon icon-sm')} Week</span>
           </div>
           <div class="habit-card-stat">
             <span class="habit-card-stat-value">${total}</span>
-            <span class="habit-card-stat-label">✓ Total</span>
+            <span class="habit-card-stat-label">${lucideIcon('circle-check', 'icon icon-sm')} Total</span>
           </div>
         </div>
+
         <div class="habit-mini-heatmap" id="mini-hm-${habit.id}" data-heatmap-habit-id="${habit.id}"></div>
+
         <div class="habit-card-actions">
           <button class="btn ${checked ? 'btn-secondary' : 'btn-primary'} btn-sm" data-action="checkin">
-            ${checked
-              ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Done Today`
-              : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Check In`}
+            ${checked ? `${lucideIcon('check', 'icon icon-sm')} <span>Done Today</span>` : `${lucideIcon('plus', 'icon icon-sm')} <span>Check In</span>`}
           </button>
-          <button class="btn btn-ghost btn-sm" data-action="archive" style="margin-left:auto">Archive</button>
+          <button class="btn btn-ghost btn-sm" data-action="archive" style="margin-left:auto;">
+            ${lucideIcon('archive', 'icon icon-sm')} <span>Archive</span>
+          </button>
         </div>
       </div>
     `;
@@ -931,7 +1038,7 @@ function renderHabitsPage() {
     card.querySelector('[data-action="reminder"]').addEventListener('click', () => openReminderModal(habit.id));
     card.querySelector('[data-action="checkin"]').addEventListener('click',  () => {
       const result = toggleCheckin(habit.id, todayStr());
-      showToast(result === 'added' ? `✓ ${unesc(habit.name)} done!` : `Undone: ${unesc(habit.name)}`,
+      showToast(result === 'added' ? `✓ Completed: ${unesc(habit.name)}` : `Marked incomplete: ${unesc(habit.name)}`,
         result === 'added' ? 'success' : 'info');
       render();
     });
@@ -945,7 +1052,7 @@ function renderHabitsPage() {
 
     grid.appendChild(card);
 
-    // Mini heatmap
+    // Mini heatmap (4 weeks)
     const miniCont = card.querySelector(`#mini-hm-${habit.id}`);
     if (miniCont) renderMiniHeatmap(miniCells, miniCont, habit.id);
   });
@@ -954,11 +1061,11 @@ function renderHabitsPage() {
 function renderMiniHeatmap(cells, container, habitId) {
   container.innerHTML = '';
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;gap:2px';
+  wrap.style.cssText = 'display:flex;gap:3px;';
   const weeks = Math.round(cells.length / 7);
   for (let w = 0; w < weeks; w++) {
     const col = document.createElement('div');
-    col.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+    col.style.cssText = 'display:flex;flex-direction:column;gap:3px;';
     cells.slice(w * 7, w * 7 + 7).forEach(cell => {
       col.appendChild(buildHeatCell(cell, habitId));
     });
@@ -968,70 +1075,13 @@ function renderMiniHeatmap(cells, container, habitId) {
 }
 
 // ----------------------------------------------------------------
-// RENDER — Heatmap Page
-// ----------------------------------------------------------------
-function renderHeatmapPage() {
-  const container = $('#heatmap-page-container');
-  if (!container) return;
-  container.innerHTML = '';
-
-  const active = getActiveHabits();
-  if (!active.length) {
-    container.innerHTML = renderEmptyState('No habits yet', 'Add habits to see their heatmaps.', '🗓️');
-    return;
-  }
-
-  // Overall
-  const overallCard = document.createElement('div');
-  overallCard.className = 'card mb-4';
-  overallCard.innerHTML = `
-    <div class="card-header">
-      <div><div class="card-title">Overall Activity</div>
-      <div class="card-subtitle">All active habits combined — 12 weeks</div></div>
-    </div>
-    <div class="card-body"><div id="hmap-overall"></div></div>
-  `;
-  container.appendChild(overallCard);
-  renderHeatmap(buildHeatmapData(null, 12), overallCard.querySelector('#hmap-overall'));
-
-  // Per-habit
-  active.forEach(habit => {
-    const { current, longest } = calcStreaks(habit.id);
-    const totalDone = getCheckins(habit.id).length;
-
-    const card = document.createElement('div');
-    card.className = 'card mb-4';
-    card.innerHTML = `
-      <div class="card-header">
-        <div style="display:flex;align-items:center;gap:0.625rem">
-          <div style="width:12px;height:12px;border-radius:50%;background:${habit.color};flex-shrink:0"></div>
-          <div>
-            <div class="card-title">${habit.name}</div>
-            <div class="card-subtitle">
-              ${CATEGORY_EMOJI[habit.category]||''} ${CATEGORY_LABEL[habit.category]||habit.category} &nbsp;·&nbsp;
-              🔥 ${current} streak &nbsp;·&nbsp; 🏆 ${longest} best &nbsp;·&nbsp; ✓ ${totalDone} total
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div id="hmap-${habit.id}" data-heatmap-habit-id="${habit.id}"></div>
-      </div>
-    `;
-    container.appendChild(card);
-    renderHeatmap(buildHeatmapData(habit.id, 12),
-      card.querySelector(`#hmap-${habit.id}`), habit.id);
-  });
-}
-
-// ----------------------------------------------------------------
-// RENDER — Statistics
+// RENDER — ANALYTICS (STATISTICS) PAGE
 // ----------------------------------------------------------------
 function renderStatsPage() {
   const active = getActiveHabits();
   const today  = todayStr();
 
-  // Summary cards
+  // 4 Summary cards matching design system
   const summaryGrid = $('#stats-summary-grid');
   if (summaryGrid) {
     const totalCheckins  = active.reduce((s, h) => s + getCheckins(h.id).length, 0);
@@ -1042,46 +1092,84 @@ function renderStatsPage() {
     const weekRate = weekTarget > 0 ? Math.round((weekDone / weekTarget) * 100) : 0;
     const score    = consistencyScore();
 
-    summaryGrid.innerHTML =
-      statCardHTML('Total Check-ins',  totalCheckins,             'all time',              '#3b82f6', 'check-circle') +
-      statCardHTML('Today',            `${completedToday}/${active.length}`, 'completed',  '#22c55e', 'zap')          +
-      statCardHTML('This Week',        `${weekDone}/${weekTarget}`,  `${weekRate}% of targets`, '#f59e0b', 'layers')  +
-      statCardHTML('Consistency',      `${score}%`,               'weekly score',          '#8b5cf6', 'trophy');
+    summaryGrid.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:#ECE9FE;color:#6554F0;">
+            ${lucideIcon('circle-check', 'icon')}
+          </div>
+        </div>
+        <div class="stat-value">${totalCheckins}</div>
+        <div class="stat-label">Total Check-ins</div>
+        <div class="stat-sub">All-time completion count</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:#E8F8F2;color:#16A675;">
+            ${lucideIcon('zap', 'icon')}
+          </div>
+        </div>
+        <div class="stat-value">${completedToday}/${active.length}</div>
+        <div class="stat-label">Today's Completed</div>
+        <div class="stat-sub">Target for current day</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:#FFF4ED;color:#F97316;">
+            ${lucideIcon('layers', 'icon')}
+          </div>
+        </div>
+        <div class="stat-value">${weekDone}/${weekTarget}</div>
+        <div class="stat-label">Weekly Goals Hit</div>
+        <div class="stat-sub">${weekRate}% of target met</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-icon" style="background:#F3E8FF;color:#8B5CF6;">
+            ${lucideIcon('trophy', 'icon')}
+          </div>
+        </div>
+        <div class="stat-value">${score}%</div>
+        <div class="stat-label">Consistency Rating</div>
+        <div class="stat-sub">Weekly performance score</div>
+      </div>
+    `;
   }
 
-  renderBarChart($('#weekly-chart')  || document.createElement('div'), getWeeklyData(8));
-  renderBarChart($('#monthly-chart') || document.createElement('div'), getMonthlyData(6));
-
-  // Re-render directly into the real containers
+  // Weekly & monthly charts
   const wc = $('#weekly-chart');
   if (wc) renderBarChart(wc, getWeeklyData(8));
   const mc = $('#monthly-chart');
   if (mc) renderBarChart(mc, getMonthlyData(6));
 
-  // Habit progress
+  // Habit progress list
   const progressList = $('#habit-progress-list');
   if (progressList) {
     if (!active.length) {
-      progressList.innerHTML = renderEmptyState('No habits yet', 'Add habits to see progress.', '📊');
+      progressList.innerHTML = renderEmptyState('No habits active', 'Add habits to monitor weekly targets.', 'sparkles');
     } else {
       progressList.innerHTML = '';
       const ws2 = getWeekStart(today);
       active.forEach(habit => {
         const done = getCheckinsByWeek(habit.id, ws2);
         const pct  = Math.round(Math.min(1, done / habit.weeklyTarget) * 100);
+        const iconName = CATEGORY_ICON_NAME[habit.category] || 'compass';
         const row  = document.createElement('div');
         row.className = 'habit-progress-row';
         row.innerHTML = `
           <div class="habit-progress-header">
             <div class="habit-progress-name">
-              <div class="habit-color-dot" style="background:${habit.color}"></div>
-              ${habit.name}
+              <span style="color:${habit.color};display:inline-flex;">${lucideIcon(iconName, 'icon icon-sm')}</span>
+              <span>${habit.name}</span>
             </div>
             <div class="habit-progress-pct">${done}/${habit.weeklyTarget} (${pct}%)</div>
           </div>
           <div class="habit-progress-track">
             <div class="habit-progress-fill" style="width:${pct}%;background:${habit.color}"
-              role="progressbar" aria-valuenow="${pct}" aria-valuemax="100" aria-label="${unesc(habit.name)} ${pct}%"></div>
+              role="progressbar" aria-valuenow="${pct}" aria-valuemax="100" aria-label="${unesc(habit.name)} progress"></div>
           </div>
         `;
         progressList.appendChild(row);
@@ -1089,51 +1177,216 @@ function renderStatsPage() {
     }
   }
 
-  // Consistency score
+  // Consistency score circular/number display
   const consistencyDiv = $('#consistency-display');
   if (consistencyDiv) {
     const score = consistencyScore();
-    const emoji = score >= 80 ? '🔥' : score >= 50 ? '⚡' : score >= 20 ? '🌱' : '💤';
-    const msg   = score >= 80 ? 'Excellent consistency!'
-                : score >= 50 ? 'Good progress this week'
-                : score >= 20 ? 'Building momentum'
-                : "Let's get started!";
+    const msg   = score >= 80 ? 'Exceptional consistency — maintain your momentum!'
+                : score >= 50 ? 'Steady progress — keep checking in daily!'
+                : score >= 20 ? 'Building initial traction — stay dedicated.'
+                : 'Get started by completing habits on your schedule.';
     consistencyDiv.innerHTML = `
-      <div class="consistency-score">${emoji} ${score}%</div>
+      <div class="consistency-score">${score}%</div>
       <div class="consistency-label">${esc(msg)}</div>
     `;
   }
 }
 
 // ----------------------------------------------------------------
-// RENDER — Reminders Page
+// RENDER — CALENDAR / HEATMAP PAGE
+// ----------------------------------------------------------------
+function renderHeatmapPage() {
+  const container = $('#heatmap-page-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const active = getActiveHabits();
+  if (!active.length) {
+    container.innerHTML = renderEmptyState('No habits found', 'Add habits to view activity heatmaps.', 'calendar-days');
+    return;
+  }
+
+  // Combined overall heatmap card
+  const overallCard = document.createElement('div');
+  overallCard.className = 'card';
+  overallCard.style.marginBottom = '1.75rem';
+  overallCard.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="card-title">Combined Habit Activity</div>
+        <div class="card-subtitle">Aggregated completion intensity across all active habits — past 12 weeks</div>
+      </div>
+    </div>
+    <div class="card-body"><div id="hmap-overall-full"></div></div>
+  `;
+  container.appendChild(overallCard);
+  renderHeatmap(buildHeatmapData(null, 12), overallCard.querySelector('#hmap-overall-full'));
+
+  // Per-habit heatmaps
+  active.forEach(habit => {
+    const { current, longest } = calcStreaks(habit.id);
+    const totalDone = getCheckins(habit.id).length;
+    const iconName  = CATEGORY_ICON_NAME[habit.category] || 'compass';
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginBottom = '1.25rem';
+    card.innerHTML = `
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div class="cat-tile cat-${habit.category}" style="width:34px;height:34px;background:${hexToRgba(habit.color, 0.12)};color:${habit.color};">
+            ${lucideIcon(iconName, 'icon icon-sm')}
+          </div>
+          <div>
+            <div class="card-title">${habit.name}</div>
+            <div class="card-subtitle">
+              ${CATEGORY_LABEL[habit.category] || habit.category} &nbsp;·&nbsp;
+              ${streaks.current} streak &nbsp;·&nbsp; ${longest} best &nbsp;·&nbsp; ${totalDone} total check-ins
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="hmap-${habit.id}" data-heatmap-habit-id="${habit.id}"></div>
+      </div>
+    `;
+    container.appendChild(card);
+    renderHeatmap(buildHeatmapData(habit.id, 12), card.querySelector(`#hmap-${habit.id}`), habit.id);
+  });
+}
+
+// ----------------------------------------------------------------
+// RENDER — FOCUS TIMER (POMODORO) PAGE
+// ----------------------------------------------------------------
+function renderTimerPage() {
+  const select = $('#timer-habit-select');
+  if (select) {
+    const currentVal = select.value;
+    select.innerHTML = '<option value="">General Focus (No habit)</option>';
+    getActiveHabits().forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h.id;
+      opt.textContent = unesc(h.name);
+      select.appendChild(opt);
+    });
+    select.value = currentVal;
+  }
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(ui.timerSecondsLeft / 60);
+  const s = ui.timerSecondsLeft % 60;
+  const timeStr = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  setEl('#timer-time', timeStr);
+}
+
+function setTimerMode(mode) {
+  ui.timerMode = mode;
+  if (ui.timerInterval) {
+    clearInterval(ui.timerInterval);
+    ui.timerInterval = null;
+  }
+  ui.timerRunning = false;
+  $('#timer-play-icon').style.display  = '';
+  $('#timer-pause-icon').style.display = 'none';
+  setEl('#timer-toggle-text', 'Start Focus');
+
+  if (mode === 'pomodoro') {
+    ui.timerSecondsLeft = 25 * 60;
+    setEl('#timer-mode-label', 'Focus Session');
+  } else if (mode === 'shortBreak') {
+    ui.timerSecondsLeft = 5 * 60;
+    setEl('#timer-mode-label', 'Short Break');
+  } else if (mode === 'longBreak') {
+    ui.timerSecondsLeft = 15 * 60;
+    setEl('#timer-mode-label', 'Long Break');
+  }
+
+  $$('.timer-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  updateTimerDisplay();
+}
+
+function toggleTimer() {
+  if (ui.timerRunning) {
+    clearInterval(ui.timerInterval);
+    ui.timerInterval = null;
+    ui.timerRunning = false;
+    $('#timer-play-icon').style.display  = '';
+    $('#timer-pause-icon').style.display = 'none';
+    setEl('#timer-toggle-text', 'Resume');
+  } else {
+    ui.timerRunning = true;
+    $('#timer-play-icon').style.display  = 'none';
+    $('#timer-pause-icon').style.display = '';
+    setEl('#timer-toggle-text', 'Pause');
+
+    ui.timerInterval = setInterval(() => {
+      if (ui.timerSecondsLeft > 0) {
+        ui.timerSecondsLeft--;
+        updateTimerDisplay();
+      } else {
+        clearInterval(ui.timerInterval);
+        ui.timerInterval = null;
+        ui.timerRunning = false;
+        $('#timer-play-icon').style.display  = '';
+        $('#timer-pause-icon').style.display = 'none';
+        setEl('#timer-toggle-text', 'Start Focus');
+
+        // Play gentle audio tone via Web Audio API
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.6);
+        } catch (_) {}
+
+        // Check in habit if selected
+        const habitId = $('#timer-habit-select')?.value;
+        if (habitId && ui.timerMode === 'pomodoro') {
+          toggleCheckin(habitId, todayStr());
+          showToast(`Completed focus session! Marked habit complete.`, 'success');
+        } else {
+          showToast(`Timer finished! Take a well-deserved break.`, 'info');
+        }
+        render();
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  setTimerMode(ui.timerMode);
+}
+
+// ----------------------------------------------------------------
+// RENDER — REMINDERS PAGE
 // ----------------------------------------------------------------
 function renderRemindersPage() {
   const container = $('#reminder-list');
   if (!container) return;
 
-  // Notification permission banner
   const bannerWrap = $('#notif-banner-wrap');
   if (bannerWrap) {
     if (!('Notification' in window)) {
       bannerWrap.innerHTML = '';
     } else if (Notification.permission === 'default') {
       bannerWrap.innerHTML = `
-        <div class="notif-banner" role="alert">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <span>Enable browser notifications to receive habit reminders.</span>
-          <button class="btn btn-sm btn-secondary" style="margin-left:auto;flex-shrink:0" id="request-notif-btn">Enable</button>
+        <div class="card" style="padding:1rem 1.25rem;margin-bottom:1.25rem;background:#FEF3C7;border-color:#FDE68A;color:#92400E;display:flex;align-items:center;gap:0.75rem;">
+          ${lucideIcon('bell', 'icon')}
+          <span style="font-size:0.875rem;font-weight:500;">Enable browser alerts to receive habit reminders directly on your desktop.</span>
+          <button class="btn btn-primary btn-sm" style="margin-left:auto;" id="request-notif-btn">Enable Alerts</button>
         </div>`;
       later(() => $('#request-notif-btn')?.addEventListener('click', requestNotificationPermission));
     } else if (Notification.permission === 'denied') {
       bannerWrap.innerHTML = `
-        <div class="notif-banner" role="alert">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0">
-            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-          </svg>
-          <span>Notifications are blocked. Enable them in your browser settings to use reminders.</span>
+        <div class="card" style="padding:1rem 1.25rem;margin-bottom:1.25rem;background:var(--danger-light);border-color:rgba(239,68,68,0.3);color:var(--danger);display:flex;align-items:center;gap:0.75rem;">
+          ${lucideIcon('bell', 'icon')}
+          <span style="font-size:0.875rem;font-weight:500;">Notifications are blocked by browser settings. Please allow notifications in site permissions.</span>
         </div>`;
     } else {
       bannerWrap.innerHTML = '';
@@ -1142,7 +1395,7 @@ function renderRemindersPage() {
 
   const active = getActiveHabits();
   if (!active.length) {
-    container.innerHTML = renderEmptyState('No active habits', 'Add habits first to set reminders.', '🔔');
+    container.innerHTML = renderEmptyState('No habits to configure', 'Add habits first to set up personalized reminders.', 'bell');
     return;
   }
 
@@ -1152,23 +1405,26 @@ function renderRemindersPage() {
     const dayTags = r.days.length === 7
       ? '<span class="reminder-day-tag">Every day</span>'
       : r.days.map(d => `<span class="reminder-day-tag">${DAY_NAMES_FULL[d]}</span>`).join('');
+    const iconName = CATEGORY_ICON_NAME[habit.category] || 'compass';
 
     const item = document.createElement('div');
     item.className = 'reminder-item';
     item.innerHTML = `
-      <div style="width:10px;height:10px;border-radius:50%;background:${habit.color};flex-shrink:0"></div>
+      <div class="cat-tile cat-${habit.category}" style="width:38px;height:38px;background:${hexToRgba(habit.color, 0.12)};color:${habit.color};">
+        ${lucideIcon(iconName, 'icon icon-sm')}
+      </div>
       <div class="reminder-habit-info">
         <div class="reminder-habit-name">${habit.name}</div>
         <div class="reminder-time">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-          ${r.enabled ? r.time : 'Not set'}
-          ${!r.enabled ? '<span style="color:var(--text-muted)">(disabled)</span>' : ''}
+          ${lucideIcon('clock', 'icon icon-sm')}
+          <span>${r.enabled ? r.time : 'No schedule set'}</span>
+          ${!r.enabled ? '<span style="color:var(--text-muted);">(disabled)</span>' : ''}
         </div>
         <div class="reminder-days">${dayTags}</div>
       </div>
-      <button class="btn btn-secondary btn-sm" data-action="edit-reminder">Edit</button>
+      <button class="btn btn-secondary btn-sm" data-action="edit-reminder">
+        ${lucideIcon('pencil', 'icon icon-sm')} <span>Edit</span>
+      </button>
     `;
     item.querySelector('[data-action="edit-reminder"]').addEventListener('click', () => openReminderModal(habit.id));
     container.appendChild(item);
@@ -1176,7 +1432,7 @@ function renderRemindersPage() {
 }
 
 // ----------------------------------------------------------------
-// RENDER — Archive Page
+// RENDER — ARCHIVE PAGE
 // ----------------------------------------------------------------
 function renderArchivePage() {
   const grid = $('#archive-grid');
@@ -1185,9 +1441,10 @@ function renderArchivePage() {
   const archived = getArchivedHabits();
   if (!archived.length) {
     grid.innerHTML = renderEmptyState(
-      'No archived habits',
-      'Archived habits will appear here. Their history is always preserved.',
-      '📦');
+      'Archive is empty',
+      'Archived habits will be safely kept here with their entire historical streak data intact.',
+      'archive'
+    );
     return;
   }
 
@@ -1195,17 +1452,21 @@ function renderArchivePage() {
   archived.forEach(habit => {
     const total     = getCheckins(habit.id).length;
     const { longest } = calcStreaks(habit.id);
+    const iconName  = CATEGORY_ICON_NAME[habit.category] || 'compass';
 
     const card = document.createElement('div');
     card.className = 'habit-card archived';
     card.innerHTML = `
-      <div class="habit-card-accent" style="background:${habit.color};opacity:0.5"></div>
+      <div class="habit-card-accent" style="background:${habit.color};opacity:0.4;"></div>
       <div class="habit-card-body">
         <div class="habit-card-header">
+          <div class="cat-tile cat-${habit.category}" style="background:${hexToRgba(habit.color, 0.12)};color:${habit.color};">
+            ${lucideIcon(iconName, 'icon')}
+          </div>
           <div>
-            <div class="habit-card-name" style="color:var(--text-secondary)">${habit.name}</div>
-            <div style="display:flex;gap:0.375rem;margin-top:0.25rem">
-              <span class="habit-tag">${CATEGORY_EMOJI[habit.category]||''} ${CATEGORY_LABEL[habit.category]||habit.category}</span>
+            <div class="habit-card-name" style="color:var(--text-secondary);">${habit.name}</div>
+            <div style="display:flex;gap:0.375rem;margin-top:0.25rem;">
+              <span class="habit-tag">${CATEGORY_LABEL[habit.category] || habit.category}</span>
               <span class="habit-tag">Archived</span>
             </div>
           </div>
@@ -1214,29 +1475,34 @@ function renderArchivePage() {
         <div class="habit-card-stats">
           <div class="habit-card-stat">
             <span class="habit-card-stat-value">${longest}</span>
-            <span class="habit-card-stat-label">🏆 Best streak</span>
+            <span class="habit-card-stat-label">${lucideIcon('trophy', 'icon icon-sm')} Best</span>
           </div>
           <div class="habit-card-stat">
             <span class="habit-card-stat-value">${total}</span>
-            <span class="habit-card-stat-label">✓ Total done</span>
+            <span class="habit-card-stat-label">${lucideIcon('circle-check', 'icon icon-sm')} Done</span>
           </div>
         </div>
         <div class="habit-card-actions">
-          <button class="btn btn-secondary btn-sm" data-action="restore">Restore</button>
-          <button class="btn btn-danger btn-sm" data-action="delete" style="margin-left:auto">Delete Permanently</button>
+          <button class="btn btn-secondary btn-sm" data-action="restore">
+            ${lucideIcon('rotate-ccw', 'icon icon-sm')} <span>Restore</span>
+          </button>
+          <button class="btn btn-danger btn-sm" data-action="delete" style="margin-left:auto;">
+            ${lucideIcon('trash-2', 'icon icon-sm')} <span>Delete Permanently</span>
+          </button>
         </div>
       </div>
     `;
 
     card.querySelector('[data-action="restore"]').addEventListener('click', () => {
       restoreHabit(habit.id);
-      showToast(`"${unesc(habit.name)}" restored.`, 'success');
+      showToast(`Restored: "${unesc(habit.name)}"`, 'success');
       render();
     });
+
     card.querySelector('[data-action="delete"]').addEventListener('click', () => {
-      if (confirm(`Permanently delete "${unesc(habit.name)}"? This cannot be undone.`)) {
+      if (confirm(`Permanently delete "${unesc(habit.name)}"? All check-in history will be removed.`)) {
         deleteHabitPermanently(habit.id);
-        showToast(`"${unesc(habit.name)}" permanently deleted.`, 'error');
+        showToast(`Permanently deleted "${unesc(habit.name)}"`, 'error');
         render();
       }
     });
@@ -1246,13 +1512,13 @@ function renderArchivePage() {
 }
 
 // ----------------------------------------------------------------
-// MAIN RENDER
+// MASTER RENDER DISPATCHER
 // ----------------------------------------------------------------
 function render() {
-  // Update nav badges
   const activeCount  = getActiveHabits().length;
   const archiveCount = getArchivedHabits().length;
   setEl('#nav-active-count', activeCount);
+
   const archBadge = $('#nav-archive-count');
   if (archBadge) {
     archBadge.textContent  = archiveCount;
@@ -1264,17 +1530,25 @@ function render() {
     case 'habits':    renderHabitsPage();  break;
     case 'heatmap':   renderHeatmapPage(); break;
     case 'stats':     renderStatsPage();   break;
+    case 'timer':     renderTimerPage();   break;
     case 'reminders': renderRemindersPage(); break;
     case 'archive':   renderArchivePage(); break;
+    case 'settings':  break;
   }
 }
 
 // ----------------------------------------------------------------
-// NAVIGATION
+// NAVIGATION & PAGE ROUTING
 // ----------------------------------------------------------------
 const PAGE_TITLES = {
-  dashboard: 'Dashboard', habits: 'My Habits', heatmap: 'Heatmap',
-  stats: 'Statistics',    reminders: 'Reminders', archive: 'Archive'
+  dashboard: 'Dashboard',
+  habits:    'My Habits',
+  stats:     'Analytics',
+  heatmap:   'Calendar',
+  timer:     'Focus Timer',
+  settings:  'Settings',
+  reminders: 'Reminders',
+  archive:   'Archive'
 };
 
 function navigateTo(page) {
@@ -1289,13 +1563,13 @@ function navigateTo(page) {
   $$('.page').forEach(el => el.classList.remove('active'));
   $(`#page-${page}`)?.classList.add('active');
 
-  setEl('#topbar-title', PAGE_TITLES[page] || page);
+  setEl('#topbar-title', PAGE_TITLES[page] || 'HabitFlow');
   closeMobileSidebar();
   render();
 }
 
 // ----------------------------------------------------------------
-// MODAL — Habit Form
+// MODALS: HABIT CRUD
 // ----------------------------------------------------------------
 function openAddHabitModal() {
   $('#habit-form').reset();
@@ -1312,12 +1586,12 @@ function openAddHabitModal() {
 function openEditHabitModal(habitId) {
   const habit = getHabitById(habitId);
   if (!habit) return;
-  $('#habit-id-input').value        = habitId;
+  $('#habit-id-input').value          = habitId;
   $('#habit-modal-title').textContent = 'Edit Habit';
-  $('#habit-name-input').value      = unesc(habit.name);
-  $('#habit-desc-input').value      = unesc(habit.description);
-  $('#habit-category-input').value  = habit.category;
-  $('#habit-target-input').value    = String(habit.weeklyTarget);
+  $('#habit-name-input').value        = unesc(habit.name);
+  $('#habit-desc-input').value        = unesc(habit.description);
+  $('#habit-category-input').value    = habit.category;
+  $('#habit-target-input').value      = String(habit.weeklyTarget);
   ui.selectedColor = habit.color;
   renderColorPicker(habit.color);
   $('#habit-archive-btn').style.display = '';
@@ -1332,7 +1606,7 @@ function saveHabitForm() {
   clearFormErrors();
 
   let valid = true;
-  if (!name) { showFieldError('err-name', 'habit-name-input'); valid = false; }
+  if (!name)     { showFieldError('err-name', 'habit-name-input'); valid = false; }
   if (!category) { showFieldError('err-category', 'habit-category-input'); valid = false; }
   if (!valid) return;
 
@@ -1350,7 +1624,7 @@ function saveHabitForm() {
     showToast('Habit updated!', 'success');
   } else {
     createHabit(data);
-    showToast('Habit created! 🎉', 'success');
+    showToast('Habit created!', 'success');
   }
   closeModal($('#habit-modal'));
   render();
@@ -1365,11 +1639,11 @@ function renderColorPicker(selected) {
     btn.type  = 'button';
     btn.className = `color-swatch${color === selected ? ' selected' : ''}`;
     btn.style.background = color;
-    btn.setAttribute('aria-label',   `Select colour ${color}`);
+    btn.setAttribute('aria-label',   `Select color ${color}`);
     btn.setAttribute('aria-pressed', String(color === selected));
     btn.addEventListener('click', () => {
       ui.selectedColor = color;
-      $$('.color-swatch').forEach(s => {
+      $$('.color-swatch', picker).forEach(s => {
         s.classList.remove('selected');
         s.setAttribute('aria-pressed', 'false');
       });
@@ -1381,14 +1655,14 @@ function renderColorPicker(selected) {
 }
 
 // ----------------------------------------------------------------
-// MODAL — Backdate Check-in
+// MODALS: BACKDATE CHECK-IN
 // ----------------------------------------------------------------
 function openBackdateModal() {
   const active = getActiveHabits();
-  if (!active.length) { showToast('Add a habit first.', 'warning'); return; }
+  if (!active.length) { showToast('Add a habit first to log check-ins.', 'warning'); return; }
 
   const sel = $('#backdate-habit-select');
-  sel.innerHTML = '<option value="">Choose a habit…</option>';
+  sel.innerHTML = '<option value="">Choose a habit...</option>';
   active.forEach(h => {
     const opt = document.createElement('option');
     opt.value       = h.id;
@@ -1408,25 +1682,23 @@ function renderBackdateCalendar(habitId) {
 
   calGrid.innerHTML = '';
   // Day headers
-  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+  ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(d => {
     const el = document.createElement('div');
     el.className = 'date-cell';
-    el.style.cssText = 'font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.625rem';
+    el.style.cssText = 'font-weight:700;background:transparent;border:none;color:var(--text-muted);font-size:0.6875rem;';
     el.textContent = d;
     calGrid.appendChild(el);
   });
 
-  const today     = todayStr();
-  const todayDate = parseDate(today);
+  const todayStrVal = todayStr();
+  const todayDate   = parseDate(todayStrVal);
 
   const startDate = new Date(todayDate);
   startDate.setDate(startDate.getDate() - 29);
 
-  // Start from Sunday of that week
   const firstSunday = new Date(startDate);
   firstSunday.setDate(startDate.getDate() - startDate.getDay());
 
-  // End on Saturday of today's week
   const lastSaturday = new Date(todayDate);
   lastSaturday.setDate(todayDate.getDate() + (6 - todayDate.getDay()));
 
@@ -1435,7 +1707,7 @@ function renderBackdateCalendar(habitId) {
     const dateStr  = localDateStr(cursor);
     const isBefore = cursor < startDate;
     const isFuture = cursor > todayDate;
-    const isToday  = dateStr === today;
+    const isToday  = (dateStr === todayStrVal);
     const isDone   = habitId ? isCheckedIn(habitId, dateStr) : false;
 
     const el = document.createElement('div');
@@ -1450,7 +1722,7 @@ function renderBackdateCalendar(habitId) {
       if (isToday) el.classList.add('today');
       if (isDone)  el.classList.add('completed');
       el.textContent = cursor.getDate();
-      el.title = `${formatDate(dateStr)}${isDone ? ' — ✓ Done' : ''}`;
+      el.title = `${formatDate(dateStr)}${isDone ? ' — Completed' : ''}`;
       el.addEventListener('click', () => handleBackdateClick(dateStr, habitId));
     }
 
@@ -1463,24 +1735,26 @@ function handleBackdateClick(dateStr, habitId) {
   if (!habitId) { showToast('Please select a habit.', 'warning'); return; }
   const result = toggleCheckin(habitId, dateStr);
   const info   = $('#backdate-selected-info');
-  if (info) info.textContent = result === 'added'
-    ? `✓ Marked complete: ${formatDate(dateStr)}`
-    : `Unmarked: ${formatDate(dateStr)}`;
+  if (info) {
+    info.textContent = result === 'added'
+      ? `Completed on ${formatDate(dateStr)}`
+      : `Marked incomplete on ${formatDate(dateStr)}`;
+  }
   renderBackdateCalendar(habitId);
   render();
 }
 
 // ----------------------------------------------------------------
-// MODAL — Reminder
+// MODALS: REMINDER SETTINGS
 // ----------------------------------------------------------------
 function openReminderModal(habitId) {
   const habit = getHabitById(habitId);
   if (!habit) return;
-  $('#reminder-habit-id').value          = habitId;
-  $('#reminder-habit-name-label').textContent = `Reminder for: ${unesc(habit.name)}`;
-  $('#reminder-time-input').value        = habit.reminder.time || '08:00';
-  $('#reminder-enabled-chk').checked     = habit.reminder.enabled;
-  ui.selectedReminderDays                = [...(habit.reminder.days || [0,1,2,3,4,5,6])];
+  $('#reminder-habit-id').value               = habitId;
+  $('#reminder-habit-name-label').textContent = `Configuring alerts for: ${unesc(habit.name)}`;
+  $('#reminder-time-input').value             = habit.reminder.time || '08:00';
+  $('#reminder-enabled-chk').checked          = habit.reminder.enabled;
+  ui.selectedReminderDays                     = [...(habit.reminder.days || [0, 1, 2, 3, 4, 5, 6])];
   updateDayBtns();
   openModal($('#reminder-modal'));
 }
@@ -1496,7 +1770,7 @@ function saveReminderForm() {
   };
   save();
   if (habit.reminder.enabled) scheduleNotification(habit);
-  showToast('Reminder saved!', 'success');
+  showToast('Reminder saved successfully!', 'success');
   closeModal($('#reminder-modal'));
   render();
 }
@@ -1517,14 +1791,20 @@ function updateDayBtns() {
 // ----------------------------------------------------------------
 async function requestNotificationPermission() {
   if (!('Notification' in window)) {
-    showToast('Notifications not supported in this browser.', 'warning'); return;
+    showToast('Notifications are not supported in this browser.', 'warning');
+    return;
   }
   const result = await Notification.requestPermission();
   if (result === 'granted') {
-    showToast('Notifications enabled! ✓', 'success');
-    new Notification('HabitFlow', { body: "You'll now receive habit reminders.", icon: 'icon-192.png' });
+    showToast('Notifications enabled successfully!', 'success');
+    try {
+      new Notification('HabitFlow', {
+        body: 'Alerts are configured. You will receive reminders for scheduled habits.',
+        icon: 'icon-192.png'
+      });
+    } catch (_) {}
   } else {
-    showToast('Notification permission denied.', 'warning');
+    showToast('Notification permission was not granted.', 'warning');
   }
   renderRemindersPage();
 }
@@ -1534,14 +1814,16 @@ function scheduleNotification(habit) {
   if (!habit.reminder.enabled) return;
   const now = new Date();
   if (!habit.reminder.days.includes(now.getDay())) return;
+
   const [h, m]       = habit.reminder.time.split(':').map(Number);
   const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
   const msUntil      = reminderTime - Date.now();
+
   if (msUntil > 0) {
     setTimeout(() => {
       if (Notification.permission === 'granted') {
         new Notification(`Time for: ${unesc(habit.name)}`, {
-          body: 'Keep your streak going! Check in now.',
+          body: 'Keep your streak alive — log your progress in HabitFlow!',
           icon: 'icon-192.png',
           tag:  `habit-${habit.id}`
         });
@@ -1551,18 +1833,20 @@ function scheduleNotification(habit) {
 }
 
 function scheduleAllNotifications() {
-  getActiveHabits().forEach(h => { if (h.reminder.enabled) scheduleNotification(h); });
+  getActiveHabits().forEach(h => {
+    if (h.reminder.enabled) scheduleNotification(h);
+  });
 }
 
 // ----------------------------------------------------------------
-// MODAL UTILITIES
+// MODAL CONTROLS & TRAP FOCUS
 // ----------------------------------------------------------------
 function openModal(modal) {
   if (!modal) return;
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
   later(() => {
-    const first = modal.querySelector('button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])');
+    const first = modal.querySelector('button:not([disabled]), input, select, textarea');
     first?.focus();
   }, 60);
 }
@@ -1580,9 +1864,6 @@ function closeAllModals() {
 document.addEventListener('click',   e => { if (e.target.classList.contains('modal-backdrop')) closeAllModals(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
 
-// ----------------------------------------------------------------
-// FORM HELPERS
-// ----------------------------------------------------------------
 function showFieldError(errId, inputId) {
   $(`#${errId}`)?.classList.add('visible');
   const input = $(`#${inputId}`);
@@ -1595,25 +1876,23 @@ function clearFormErrors() {
 }
 
 // ----------------------------------------------------------------
-// TOAST
+// TOAST NOTIFICATIONS (Lucide Outline Icons)
 // ----------------------------------------------------------------
 function showToast(message, type = 'info') {
   const container = $('#toast-container');
   if (!container) return;
 
-  const icons = {
-    success: '<polyline points="20 6 9 17 4 12"/>',
-    error:   '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
-    warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-    info:    '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
-  };
+  const iconName = type === 'success' ? 'circle-check'
+                 : type === 'error'   ? 'trash-2'
+                 : type === 'warning' ? 'bell'
+                 : 'sparkles';
 
-  const toast       = document.createElement('div');
-  toast.className   = `toast ${type}`;
-  toast.innerHTML   = `
-    <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      ${icons[type] || icons.info}
-    </svg>${esc(message)}`;
+  const toast     = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${lucideIcon(iconName, 'icon icon-sm')}</span>
+    <span>${esc(message)}</span>
+  `;
   container.appendChild(toast);
 
   requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
@@ -1624,12 +1903,14 @@ function showToast(message, type = 'info') {
 }
 
 // ----------------------------------------------------------------
-// THEME
+// THEME SWITCHER
 // ----------------------------------------------------------------
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  $('#theme-icon-moon').style.display = theme === 'dark' ? 'none' : '';
-  $('#theme-icon-sun').style.display  = theme === 'dark' ? '' : 'none';
+  const moonIcon = $('#theme-icon-moon');
+  const sunIcon  = $('#theme-icon-sun');
+  if (moonIcon) moonIcon.style.display = theme === 'dark' ? 'none' : '';
+  if (sunIcon)  sunIcon.style.display  = theme === 'dark' ? '' : 'none';
   setEl('#theme-label', theme === 'dark' ? 'Light mode' : 'Dark mode');
 }
 
@@ -1637,37 +1918,39 @@ function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
   applyTheme(state.theme);
   save();
+  showToast(state.theme === 'dark' ? 'Dark theme enabled' : 'Light theme enabled', 'info');
 }
 
 // ----------------------------------------------------------------
 // MOBILE SIDEBAR
 // ----------------------------------------------------------------
 function openMobileSidebar() {
-  $('#sidebar').classList.add('mobile-open');
-  $('#sidebar-overlay').classList.add('visible');
+  $('#sidebar')?.classList.add('mobile-open');
+  $('#sidebar-overlay')?.classList.add('visible');
   $('#mobile-menu-btn')?.setAttribute('aria-expanded', 'true');
 }
 
 function closeMobileSidebar() {
-  $('#sidebar').classList.remove('mobile-open');
-  $('#sidebar-overlay').classList.remove('visible');
+  $('#sidebar')?.classList.remove('mobile-open');
+  $('#sidebar-overlay')?.classList.remove('visible');
   $('#mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
 }
 
 // ----------------------------------------------------------------
-// EXPORT / IMPORT
+// DATA EXPORT & IMPORT
 // ----------------------------------------------------------------
 function exportData() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = Object.assign(document.createElement('a'), {
-    href: url, download: `habitflow-backup-${todayStr()}.json`
+    href: url,
+    download: `habitflow-backup-${todayStr()}.json`
   });
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Data exported successfully!', 'success');
+  showToast('HabitFlow backup exported successfully!', 'success');
 }
 
 function importData(file) {
@@ -1677,65 +1960,73 @@ function importData(file) {
     try {
       const imported = JSON.parse(e.target.result);
       if (!imported || !Array.isArray(imported.habits)) {
-        showToast('Invalid file — please use a HabitFlow export.', 'error'); return;
+        showToast('Invalid file format. Please supply a valid HabitFlow backup.', 'error');
+        return;
       }
-      if (!confirm(`Replace all data with ${imported.habits.length} habits from backup?`)) return;
+      if (!confirm(`Restore ${imported.habits.length} habits from backup? This will replace current records.`)) return;
+
       state.habits   = imported.habits.map(migrateHabit);
       state.checkins = imported.checkins || {};
       if (imported.theme === 'dark' || imported.theme === 'light') state.theme = imported.theme;
       save();
       applyTheme(state.theme);
-      showToast(`Imported ${state.habits.length} habits!`, 'success');
+      showToast(`Successfully restored ${state.habits.length} habits!`, 'success');
       render();
     } catch {
-      showToast('Could not parse the file. Is it a valid JSON export?', 'error');
+      showToast('Could not parse the backup file. Verify valid JSON.', 'error');
     }
   };
   reader.readAsText(file);
 }
 
 // ----------------------------------------------------------------
-// PWA
+// PWA SERVICE WORKER
 // ----------------------------------------------------------------
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {/* not critical */});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }
 
 // ----------------------------------------------------------------
-// MICRO UTILITIES
-// ----------------------------------------------------------------
-function setEl(sel, text) {
-  const el = $(sel);
-  if (el) el.textContent = text;
-}
-
-function later(fn, ms = 0) {
-  setTimeout(fn, ms);
-}
-
-// ----------------------------------------------------------------
-// EVENT BINDING
+// EVENT BINDINGS
 // ----------------------------------------------------------------
 function bindEvents() {
-  // Navigation
+  // Navigation tabs
   $$('.nav-item[data-page]').forEach(btn =>
     btn.addEventListener('click', () => navigateTo(btn.dataset.page))
   );
 
-  // Theme
+  // Theme Toggles
   $('#theme-toggle-btn')?.addEventListener('click', toggleTheme);
+  $('#settings-theme-btn')?.addEventListener('click', toggleTheme);
 
   // Mobile sidebar
   $('#mobile-menu-btn')?.addEventListener('click', openMobileSidebar);
   $('#sidebar-overlay')?.addEventListener('click', closeMobileSidebar);
 
   // New Habit buttons
+  $('#hero-add-habit-btn')?.addEventListener('click',   openAddHabitModal);
   $('#topbar-add-habit-btn')?.addEventListener('click', openAddHabitModal);
   $('#habits-add-btn')?.addEventListener('click',       openAddHabitModal);
 
-  // Habit modal
+  // Header quick links
+  $('#header-notif-btn')?.addEventListener('click', () => navigateTo('reminders'));
+  $('#view-all-habits-btn')?.addEventListener('click', () => navigateTo('habits'));
+  $('#view-calendar-btn')?.addEventListener('click', () => navigateTo('heatmap'));
+  $('#settings-reminders-link-btn')?.addEventListener('click', () => navigateTo('reminders'));
+
+  // Global search input
+  $('#global-search')?.addEventListener('input', e => {
+    ui.searchQuery = e.target.value.trim();
+    if (ui.currentPage === 'dashboard') {
+      renderTodayChecklist();
+    } else if (ui.currentPage === 'habits') {
+      renderHabitsPage();
+    }
+  });
+
+  // Habit CRUD modal
   $('#habit-modal-close')?.addEventListener('click',  () => closeModal($('#habit-modal')));
   $('#habit-modal-cancel')?.addEventListener('click', () => closeModal($('#habit-modal')));
   $('#habit-modal-save')?.addEventListener('click',   saveHabitForm);
@@ -1744,7 +2035,7 @@ function bindEvents() {
     if (!habitId) return;
     const habit = getHabitById(habitId);
     if (!habit) return;
-    if (confirm(`Archive "${unesc(habit.name)}"? Your history will be preserved.`)) {
+    if (confirm(`Archive "${unesc(habit.name)}"? Check-in history is preserved.`)) {
       archiveHabit(habitId);
       closeModal($('#habit-modal'));
       showToast(`"${unesc(habit.name)}" archived.`, 'info');
@@ -1752,7 +2043,6 @@ function bindEvents() {
     }
   });
 
-  // Clear errors on input
   $('#habit-name-input')?.addEventListener('input', () => {
     $('#err-name')?.classList.remove('visible');
     $('#habit-name-input')?.classList.remove('error');
@@ -1771,12 +2061,11 @@ function bindEvents() {
     renderBackdateCalendar(e.target.value);
   });
 
-  // Reminder modal
+  // Reminder settings modal
   $('#reminder-modal-close')?.addEventListener('click',  () => closeModal($('#reminder-modal')));
   $('#reminder-modal-cancel')?.addEventListener('click', () => closeModal($('#reminder-modal')));
   $('#reminder-modal-save')?.addEventListener('click',   saveReminderForm);
 
-  // Day buttons
   $$('.day-btn', $('#reminder-days-group') || document).forEach(btn =>
     btn.addEventListener('click', () => {
       const day = Number(btn.dataset.day);
@@ -1795,23 +2084,34 @@ function bindEvents() {
     })
   );
 
-  // Export
-  $('#export-btn')?.addEventListener('click', exportData);
+  // Focus Timer controls
+  $$('.timer-tab').forEach(tab =>
+    tab.addEventListener('click', () => setTimerMode(tab.dataset.mode))
+  );
+  $('#timer-toggle-btn')?.addEventListener('click', toggleTimer);
+  $('#timer-reset-btn')?.addEventListener('click',  resetTimer);
 
-  // Import
-  const importFile = $('#import-file');
-  importFile?.addEventListener('change', e => {
+  // Export / Import
+  $('#export-btn')?.addEventListener('click',          exportData);
+  $('#settings-export-btn')?.addEventListener('click', exportData);
+
+  $('#import-file')?.addEventListener('change', e => {
     const file = e.target.files[0];
     if (file) importData(file);
-    importFile.value = '';
+    e.target.value = '';
+  });
+  $('#settings-import-file')?.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) importData(file);
+    e.target.value = '';
   });
 
-  // Colour picker init
+  // Init color picker
   renderColorPicker(ui.selectedColor);
 }
 
 // ----------------------------------------------------------------
-// INIT
+// INITIALIZATION
 // ----------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   load();
