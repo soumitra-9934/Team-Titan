@@ -174,15 +174,19 @@
       </label>
     </div>
 
-    <!-- Sidebar Profile Footer -->
-    <div class="sidebar-footer">
-      <div class="user-profile-card">
-        <div class="user-avatar" aria-hidden="true">AM</div>
+    <!-- Sidebar Profile / Auth Section -->
+    <div class="sidebar-footer" id="sidebar-auth-section">
+      <div class="user-profile-card" id="sidebar-user-card">
+        <div class="user-avatar" id="sidebar-avatar" aria-hidden="true">G</div>
         <div class="user-info">
-          <div class="user-name">Alex Morgan</div>
-          <div class="user-status">Pro Member</div>
+          <div class="user-name" id="sidebar-user-name">Guest User</div>
+          <div class="user-status" id="sidebar-user-status">Local Mode</div>
         </div>
       </div>
+      <button class="btn btn-secondary btn-sm" id="sidebar-auth-btn" style="width:100%;margin-top:0.25rem;">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--primary);"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span id="sidebar-auth-btn-text">Sign In with Google</span>
+      </button>
     </div>
   </nav>
 
@@ -218,8 +222,14 @@
 
       <div class="topbar-spacer"></div>
 
-      <!-- Header actions: Theme toggle, Notifications, Add Habit, Profile -->
+      <!-- Header actions: Sync badge, Theme toggle, Notifications, Add Habit, Auth/Profile -->
       <div class="topbar-actions">
+        <!-- Sync Status Badge -->
+        <div class="sync-status-badge guest" id="sync-status-badge" title="Data stored locally in this browser">
+          <span class="sync-dot"></span>
+          <span id="sync-status-text">Guest Mode</span>
+        </div>
+
         <!-- Light / Dark mode toggle -->
         <button class="btn btn-ghost btn-icon" id="theme-toggle-btn" aria-label="Toggle dark mode" title="Toggle theme">
           <!-- Lucide Moon Icon (shown in light mode) -->
@@ -260,13 +270,40 @@
           <span>New Habit</span>
         </button>
 
-        <!-- Greeting & Avatar -->
-        <div class="topbar-greeting">
-          <div>
-            <div class="topbar-greeting-text">Welcome, Alex</div>
-            <div class="topbar-greeting-sub" id="header-today-date"></div>
+        <!-- Topbar Auth Action (Google Sign In or Profile Dropdown) -->
+        <div id="topbar-auth-section" class="user-dropdown-wrap">
+          <!-- Button shown when guest -->
+          <button class="btn-google" id="header-google-signin-btn" title="Sign in with your Google account">
+            <svg viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>Sign in</span>
+          </button>
+
+          <!-- Profile display when authenticated (initially hidden) -->
+          <div id="header-user-profile" style="display:none;cursor:pointer;">
+            <div class="topbar-greeting">
+              <div>
+                <div class="topbar-greeting-text" id="header-user-name">Welcome</div>
+                <div class="topbar-greeting-sub" id="header-today-date"></div>
+              </div>
+              <div class="user-avatar" id="header-avatar" style="width:34px;height:34px;font-size:0.75rem;" aria-hidden="true">U</div>
+            </div>
+            <!-- Profile dropdown menu -->
+            <div class="user-dropdown-menu" id="user-dropdown-menu">
+              <div class="user-dropdown-header">
+                <div class="user-dropdown-name" id="dropdown-user-name">User</div>
+                <div class="user-dropdown-email" id="dropdown-user-email">user@gmail.com</div>
+              </div>
+              <button class="user-dropdown-item danger" id="dropdown-signout-btn">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
-          <div class="user-avatar" style="width:34px;height:34px;font-size:0.75rem;" aria-hidden="true">AM</div>
         </div>
       </div>
     </header>
@@ -291,14 +328,24 @@
             </div>
             <h2 class="hero-heading">Build a Better You</h2>
             <p class="hero-desc">Track your habits, stay consistent, and make progress towards your goals every day.</p>
-            <button class="hero-btn" id="hero-add-habit-btn">
-              <!-- Lucide Plus Icon -->
-              <svg class="icon icon-sm" viewBox="0 0 24 24">
-                <path d="M5 12h14"/>
-                <path d="M12 5v14"/>
-              </svg>
-              <span>Add New Habit</span>
-            </button>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+              <button class="hero-btn" id="hero-add-habit-btn">
+                <!-- Lucide Plus Icon -->
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <path d="M5 12h14"/>
+                  <path d="M12 5v14"/>
+                </svg>
+                <span>Add New Habit</span>
+              </button>
+              <button class="hero-btn" id="hero-share-card-btn" style="background:rgba(255,255,255,0.18);color:#FFFFFF;border:1px solid rgba(255,255,255,0.3);box-shadow:none;">
+                <!-- Lucide Share2 Icon -->
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                <span>Share Progress</span>
+              </button>
+            </div>
           </div>
           <!-- Right side: Vector Mountain Landscape Asset -->
           <div class="hero-illustration" aria-hidden="true">
@@ -839,7 +886,95 @@
   </div>
 </div>
 
-<!-- JavaScript Application Engine -->
-<script src="script.js" defer></script>
+<!-- ================================================================
+     MODAL: Safe Cloud Sync & Migration Resolver
+     ================================================================ -->
+<div id="migration-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="migration-modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="migration-modal-title">Sync Habits with Cloud</h2>
+      <button class="btn btn-ghost btn-icon" id="migration-modal-close" aria-label="Close">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.75rem;">
+        We detected local habits stored on this browser as well as existing cloud records in your Google account. Please choose how you would like to proceed:
+      </p>
+      <div class="migration-options-list">
+        <!-- Option 1: Safe Merge (Default & Recommended) -->
+        <div class="migration-option-card selected" data-choice="merge" id="mig-opt-merge">
+          <input type="radio" name="migration-choice" value="merge" checked style="margin-top:0.1875rem;accent-color:var(--primary);">
+          <div>
+            <div class="migration-option-title">Safe Merge (Recommended)</div>
+            <div class="migration-option-desc">Combines local and cloud habits without duplicates. Unions all check-in dates together. Zero data loss.</div>
+          </div>
+        </div>
+        <!-- Option 2: Keep Cloud Records -->
+        <div class="migration-option-card" data-choice="cloud" id="mig-opt-cloud">
+          <input type="radio" name="migration-choice" value="cloud" style="margin-top:0.1875rem;accent-color:var(--primary);">
+          <div>
+            <div class="migration-option-title">Keep Cloud Records</div>
+            <div class="migration-option-desc">Loads your existing account habits from Firestore and updates this browser.</div>
+          </div>
+        </div>
+        <!-- Option 3: Overwrite Cloud Records -->
+        <div class="migration-option-card" data-choice="local" id="mig-opt-local">
+          <input type="radio" name="migration-choice" value="local" style="margin-top:0.1875rem;accent-color:var(--primary);">
+          <div>
+            <div class="migration-option-title">Overwrite Cloud with Local Records</div>
+            <div class="migration-option-desc">Replaces cloud records with this browser's habits. A local snapshot backup is saved automatically.</div>
+          </div>
+        </div>
+      </div>
+      <div id="migration-backup-hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;display:flex;align-items:center;gap:0.375rem;">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>A local safety backup snapshot is saved before any change.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" id="migration-cancel-btn">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="migration-confirm-btn">Apply Sync</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     MODAL: Share Progress Card (1200x630 Canvas)
+     ================================================================ -->
+<div id="share-card-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="share-card-modal-title">
+  <div class="modal" style="max-width: 680px;">
+    <div class="modal-header">
+      <h2 class="modal-title" id="share-card-modal-title">Share Your Habit Progress</h2>
+      <button class="btn btn-ghost btn-icon" id="share-card-modal-close" aria-label="Close">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="text-align: center;">
+      <div id="share-card-preview-wrap" style="width: 100%; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-md); margin-bottom: 1rem; background: #1E1B4B; aspect-ratio: 1200/630;">
+        <canvas id="progress-card-canvas" width="1200" height="630" style="width: 100%; height: auto; display: block;"></canvas>
+      </div>
+      <p style="font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+        High-resolution 1200×630 PNG card celebrating your streaks, completion rate, and heatmap.
+      </p>
+    </div>
+    <div class="modal-footer" style="justify-content: space-between;">
+      <button class="btn btn-secondary btn-sm" id="share-card-modal-cancel">Close</button>
+      <div style="display: flex; gap: 0.625rem;">
+        <button class="btn btn-secondary btn-sm" id="share-card-native-btn" style="display: none;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Share</span>
+        </button>
+        <button class="btn btn-primary btn-sm" id="share-card-download-btn">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" x2="3"/></svg>
+          <span>Download PNG</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript Application Engine (Native ES Module) -->
+<script type="module" src="script.js"></script>
 </body>
 </html>

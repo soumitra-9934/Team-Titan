@@ -1,21 +1,26 @@
 // HabitFlow Service Worker — Offline support
-const CACHE_NAME = 'habitflow-v1';
+const CACHE_NAME = 'habitflow-v2';
 const ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/script.js',
+  '/firebase-config.js',
   '/manifest.json',
   '/mountain-hero.svg',
   '/icon-192.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
 ];
 
-// Install: cache all assets
+// Install: cache all assets with resilient individual caching
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).catch(() => {})
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(ASSETS.map(url => cache.add(url).catch(err => {
+        console.warn(`HabitFlow SW: failed to cache ${url}:`, err);
+      })))
+    )
   );
 });
 
@@ -29,11 +34,20 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: cache-first for assets, network-first for everything else
+// Fetch: cache-first for public app shell, network-only for Auth/Firestore
 self.addEventListener('fetch', (event) => {
-  // Only handle same-origin and Google Fonts
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET') return;
+
+  // SECURITY: Never intercept or cache Auth tokens or Firestore user data
+  if (
+    url.hostname.includes('identitytoolkit') ||
+    url.hostname.includes('securetoken') ||
+    url.hostname.includes('firestore.googleapis.com') ||
+    url.pathname.includes('/__/auth')
+  ) {
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(cached => {

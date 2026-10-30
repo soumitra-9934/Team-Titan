@@ -1,11 +1,28 @@
 // ================================================================
 // HabitFlow — Habit Tracker & Consistency Dashboard
 // Hack Day Haldia'26 | Team Titan
-// Stack: Vanilla HTML + CSS + JS | Persistence: localStorage
+// Stack: Vanilla HTML + CSS + JS | Persistence: localStorage + Firestore
 // Strict Icon System: Lucide Outline Icons (No Emojis)
 // ================================================================
 
-'use strict';
+import {
+  auth,
+  db,
+  isFirebaseAvailable,
+  signInWithGoogle,
+  signOutUser,
+  checkRedirectAuth,
+  onAuthStateChanged,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  getDocs,
+  writeBatch,
+  serverTimestamp
+} from './firebase-config.js';
 
 // ----------------------------------------------------------------
 // CONSTANTS & LUCIDE SVG ICON DEFINITIONS
@@ -115,11 +132,21 @@ let ui = {
   timerRunning: false,
 };
 
+// Auth & Cloud Sync state
+let currentUser = null;
+let pendingMigrationData = null;
+let cloudSyncTimeout = null;
+
 function save() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) {
     console.warn('HabitFlow: Storage full or disabled.', e);
+  }
+
+  // If authenticated and online, trigger background cloud sync
+  if (currentUser && navigator.onLine && isFirebaseAvailable && db) {
+    debouncedCloudSync();
   }
 }
 
@@ -145,6 +172,383 @@ function load() {
     }
   } catch (e) {
     console.warn('HabitFlow: Error parsing stored data. Starting fresh.', e);
+  }
+}
+
+// ----------------------------------------------------------------
+// FIREBASE AUTH & FIRESTORE CLOUD SYNC ENGINE
+// ----------------------------------------------------------------
+function setSyncBadge(type, text) {
+  const badge = $('#sync-status-badge');
+  const textEl = $('#sync-status-text');
+  if (badge) badge.className = `sync-status-badge ${type}`;
+  if (textEl) textEl.textContent = text;
+}
+
+function saveSafetyBackup(tag) {
+  try {
+    const backupKey = `hackday-haldia-safety-backup-${tag}-${Date.now()}`;
+    const payload = {
+      tag,
+      timestamp: new Date().toISOString(),
+      state: JSON.parse(JSON.stringify(state))
+    };
+    localStorage.setItem(backupKey, JSON.stringify(payload));
+    console.log(`HabitFlow: Safety snapshot created (${backupKey})`);
+  } catch (e) {
+    console.warn('HabitFlow: Could not write safety backup to localStorage:', e);
+  }
+}
+
+function debouncedCloudSync() {
+  clearTimeout(cloudSyncTimeout);
+  setSyncBadge('syncing', 'Syncing...');
+  cloudSyncTimeout = setTimeout(async () => {
+    if (!currentUser || !currentUser.uid || !db) return;
+    try {
+      await syncAllLocalToCloud(currentUser.uid);
+      setSyncBadge('synced', 'Cloud Synced');
+    } catch (err) {
+      console.warn('HabitFlow: Cloud sync failed, retained in local storage:', err);
+      setSyncBadge('offline', 'Sync Paused');
+    }
+  }, 800);
+}
+
+/**
+ * Upload all local habits and check-ins to Firestore using month partitioning.
+ * Scalable: 1 doc per habit, max ~350 bytes per month doc. Strictly under /users/{uid}/...
+ */
+async function syncAllLocalToCloud(uid) {
+  if (!db || !uid) return;
+  const batch = writeBatch(db);
+
+  // 1. User document metadata
+  const userRef = doc(db, 'users', uid);
+  batch.set(userRef, {
+    displayName: currentUser?.displayName || 'User',
+    email: currentUser?.email || '',
+    photoURL: currentUser?.photoURL || '',
+    theme: state.theme,
+    schemaVersion: 2,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+
+  // 2. Habits subcollection (/users/{uid}/habits/{habitId})
+  state.habits.forEach(h => {
+    const habitRef = doc(db, 'users', uid, 'habits', h.id);
+    batch.set(habitRef, {
+      name: h.name,
+      description: h.description || '',
+      category: h.category,
+      color: h.color,
+      weeklyTarget: h.weeklyTarget,
+      createdAt: h.createdAt,
+      archived: h.archived,
+      reminder: h.reminder,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  });
+
+  // 3. Check-ins subcollection partitioned by month (/users/{uid}/checkinMonths/{habitId}_{YYYY-MM})
+  for (const [habitId, dates] of Object.entries(state.checkins)) {
+    if (!Array.isArray(dates)) continue;
+    const monthsMap = {};
+    dates.forEach(d => {
+      if (typeof d === 'string' && d.length >= 7) {
+        const ym = d.slice(0, 7);
+        if (!monthsMap[ym]) monthsMap[ym] = [];
+        monthsMap[ym].push(d);
+      }
+    });
+
+    for (const [yearMonth, monthDates] of Object.entries(monthsMap)) {
+      const monthDocId = `${habitId}_${yearMonth}`;
+      const monthRef = doc(db, 'users', uid, 'checkinMonths', monthDocId);
+      batch.set(monthRef, {
+        habitId,
+        yearMonth,
+        dates: monthDates,
+        count: monthDates.length,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+  }
+
+  await batch.commit();
+}
+
+/**
+ * Fetch cloud habits and check-ins for this user from Firestore.
+ */
+async function fetchCloudUserData(uid) {
+  if (!db || !uid) return null;
+  try {
+    const habitsCol = collection(db, 'users', uid, 'habits');
+    const habitsSnap = await getDocs(habitsCol);
+    const cloudHabits = [];
+    habitsSnap.forEach(d => {
+      cloudHabits.push(migrateHabit({ id: d.id, ...d.data() }));
+    });
+
+    const checkinsCol = collection(db, 'users', uid, 'checkinMonths');
+    const checkinsSnap = await getDocs(checkinsCol);
+    const cloudCheckins = {};
+    checkinsSnap.forEach(d => {
+      const data = d.data();
+      const hid = data.habitId;
+      if (hid && Array.isArray(data.dates)) {
+        if (!cloudCheckins[hid]) cloudCheckins[hid] = [];
+        data.dates.forEach(dateStr => {
+          if (!cloudCheckins[hid].includes(dateStr)) cloudCheckins[hid].push(dateStr);
+        });
+      }
+    });
+
+    for (const hid of Object.keys(cloudCheckins)) {
+      cloudCheckins[hid].sort();
+    }
+
+    return { habits: cloudHabits, checkins: cloudCheckins };
+  } catch (err) {
+    console.warn('HabitFlow: Could not read cloud user data:', err);
+    return null;
+  }
+}
+
+/**
+ * Deduplicate and merge local habits with cloud habits.
+ * Matches by normalized name & category. Performs Set union on checkin dates.
+ */
+function mergeHabitsAndCheckins(localData, cloudData) {
+  const mergedHabits = [];
+  const mergedCheckins = {};
+  const cloudHabitsMap = new Map();
+
+  cloudData.habits.forEach(h => {
+    const key = `${unesc(h.name).trim().toLowerCase()}__${h.category}`;
+    cloudHabitsMap.set(key, h);
+  });
+
+  // Start with all cloud habits
+  cloudData.habits.forEach(ch => {
+    mergedHabits.push({ ...ch });
+    mergedCheckins[ch.id] = [...(cloudData.checkins[ch.id] || [])];
+  });
+
+  // Merge in local habits
+  localData.habits.forEach(lh => {
+    const key = `${unesc(lh.name).trim().toLowerCase()}__${lh.category}`;
+    const matchedCloudHabit = cloudHabitsMap.get(key);
+
+    if (matchedCloudHabit) {
+      // Existing habit in cloud: merge checkins without duplicates
+      const targetId = matchedCloudHabit.id;
+      const localDates = localData.checkins[lh.id] || [];
+      const combined = new Set([...(mergedCheckins[targetId] || []), ...localDates]);
+      mergedCheckins[targetId] = Array.from(combined).sort();
+
+      // Merge metadata (keep higher target and existing description)
+      const existingIdx = mergedHabits.findIndex(h => h.id === targetId);
+      if (existingIdx !== -1) {
+        mergedHabits[existingIdx].weeklyTarget = Math.max(mergedHabits[existingIdx].weeklyTarget, lh.weeklyTarget);
+        if (lh.description && !mergedHabits[existingIdx].description) {
+          mergedHabits[existingIdx].description = lh.description;
+        }
+      }
+    } else {
+      // New unique local habit: add it to merged set
+      mergedHabits.push({ ...lh });
+      mergedCheckins[lh.id] = [...(localData.checkins[lh.id] || [])];
+    }
+  });
+
+  return { habits: mergedHabits, checkins: mergedCheckins };
+}
+
+/**
+ * Evaluate cloud sync state upon login.
+ * Handles: empty cloud, empty local, or conflict resolution.
+ */
+async function evaluateCloudSync(user) {
+  if (!user || !isFirebaseAvailable) return;
+  setSyncBadge('syncing', 'Checking cloud...');
+
+  const cloudData = await fetchCloudUserData(user.uid);
+  if (!cloudData) {
+    setSyncBadge('synced', 'Cloud Connected');
+    return;
+  }
+
+  const cloudCount = cloudData.habits.length;
+  const localCount = state.habits.length;
+
+  if (cloudCount === 0 && localCount > 0) {
+    // Case 1: First time sign-in with local guest data -> safe initial upload
+    setSyncBadge('syncing', 'Backing up...');
+    await syncAllLocalToCloud(user.uid);
+    setSyncBadge('synced', 'Cloud Synced');
+    showToast('Local habits backed up to your Google account!', 'success');
+  } else if (cloudCount > 0 && localCount === 0) {
+    // Case 2: New browser / device -> restore cloud habits
+    state.habits = cloudData.habits;
+    state.checkins = cloudData.checkins;
+    save();
+    render();
+    setSyncBadge('synced', 'Cloud Synced');
+    showToast('Restored habits from your Google account!', 'success');
+  } else if (cloudCount > 0 && localCount > 0) {
+    // Case 3: Both exist! Compare to check if already in sync
+    const cloudIds = cloudData.habits.map(h => h.id).sort().join(',');
+    const localIds = state.habits.map(h => h.id).sort().join(',');
+
+    if (cloudIds === localIds) {
+      // Habits are identical: merge check-ins (Set union) to seamlessly synchronize cross-device progress
+      const merged = mergeHabitsAndCheckins({ habits: state.habits, checkins: state.checkins }, cloudData);
+      state.habits = merged.habits;
+      state.checkins = merged.checkins;
+      save();
+      render();
+      setSyncBadge('synced', 'Cloud Synced');
+    } else {
+      // Conflict / merge needed -> open migration modal
+      pendingMigrationData = { cloudData, user };
+      openModal($('#migration-modal'));
+    }
+  } else {
+    setSyncBadge('synced', 'Cloud Synced');
+  }
+}
+
+async function applyMigrationChoice(choice) {
+  if (!pendingMigrationData || !pendingMigrationData.user) {
+    closeModal($('#migration-modal'));
+    return;
+  }
+
+  const { cloudData, user } = pendingMigrationData;
+  saveSafetyBackup(choice);
+
+  if (choice === 'merge') {
+    // Safe Merge: deduplicate habits by name & category, union all checkin dates
+    const merged = mergeHabitsAndCheckins({ habits: state.habits, checkins: state.checkins }, cloudData);
+    state.habits = merged.habits;
+    state.checkins = merged.checkins;
+    save();
+    await syncAllLocalToCloud(user.uid);
+    render();
+    showToast('Local and cloud habits merged successfully!', 'success');
+  } else if (choice === 'cloud') {
+    // Keep cloud data
+    state.habits = cloudData.habits;
+    state.checkins = cloudData.checkins;
+    save();
+    render();
+    showToast('Loaded your cloud habits.', 'info');
+  } else if (choice === 'local') {
+    // Overwrite cloud records with local
+    await syncAllLocalToCloud(user.uid);
+    showToast('Cloud records updated with local habits.', 'info');
+  }
+
+  setSyncBadge('synced', 'Cloud Synced');
+  pendingMigrationData = null;
+  closeModal($('#migration-modal'));
+}
+
+/**
+ * Updates UI (header, sidebar, badge) to reflect current User or Guest mode.
+ */
+function updateAuthUI(user) {
+  const guestBtn = $('#header-google-signin-btn');
+  const userProfile = $('#header-user-profile');
+  const syncBadge = $('#sync-status-badge');
+  const syncText = $('#sync-status-text');
+
+  const sidebarName = $('#sidebar-user-name');
+  const sidebarStatus = $('#sidebar-user-status');
+  const sidebarAvatar = $('#sidebar-avatar');
+  const sidebarAuthText = $('#sidebar-auth-btn-text');
+
+  if (user) {
+    if (guestBtn) guestBtn.style.display = 'none';
+    if (userProfile) userProfile.style.display = 'flex';
+    setEl('#header-user-name', user.displayName ? `Hi, ${user.displayName.split(' ')[0]}` : 'Welcome');
+    setEl('#dropdown-user-name', user.displayName || 'Google User');
+    setEl('#dropdown-user-email', user.email || '');
+
+    const headerAvatar = $('#header-avatar');
+    if (headerAvatar) {
+      if (user.photoURL) {
+        headerAvatar.innerHTML = `<img src="${user.photoURL}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        const initials = user.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U';
+        headerAvatar.textContent = initials;
+      }
+    }
+
+    if (sidebarName) sidebarName.textContent = user.displayName || 'Google User';
+    if (sidebarStatus) sidebarStatus.textContent = 'Cloud Synced';
+    if (sidebarAvatar) {
+      if (user.photoURL) {
+        sidebarAvatar.innerHTML = `<img src="${user.photoURL}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        const initials = user.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U';
+        sidebarAvatar.textContent = initials;
+      }
+    }
+    if (sidebarAuthText) sidebarAuthText.textContent = 'Sign Out';
+
+    if (syncBadge) {
+      syncBadge.className = 'sync-status-badge synced';
+      if (syncText) syncText.textContent = 'Cloud Synced';
+    }
+  } else {
+    // Guest Mode
+    if (guestBtn) guestBtn.style.display = 'inline-flex';
+    if (userProfile) userProfile.style.display = 'none';
+
+    if (sidebarName) sidebarName.textContent = 'Guest User';
+    if (sidebarStatus) sidebarStatus.textContent = 'Local Mode';
+    if (sidebarAvatar) sidebarAvatar.textContent = 'G';
+    if (sidebarAuthText) sidebarAuthText.textContent = 'Sign In with Google';
+
+    if (syncBadge) {
+      syncBadge.className = 'sync-status-badge guest';
+      if (syncText) syncText.textContent = 'Guest Mode';
+    }
+  }
+}
+
+async function handleGoogleSignIn() {
+  if (!navigator.onLine) {
+    showToast('Internet connection required for Google sign-in. You can continue tracking offline in Guest Mode.', 'warning');
+    return;
+  }
+  try {
+    showToast('Connecting with Google...', 'info');
+    const user = await signInWithGoogle();
+    if (user) {
+      currentUser = user;
+      updateAuthUI(user);
+      await evaluateCloudSync(user);
+    }
+  } catch (error) {
+    console.warn('HabitFlow: Google sign-in failed or closed:', error);
+    if (error.code !== 'auth/popup-closed-by-user') {
+      showToast('Could not sign in with Google. You remain in Guest Mode.', 'warning');
+    }
+  }
+}
+
+async function handleSignOut() {
+  try {
+    await signOutUser();
+    currentUser = null;
+    updateAuthUI(null);
+    showToast('Signed out. Local habits are preserved in Guest Mode.', 'info');
+  } catch (err) {
+    console.warn('HabitFlow: Error signing out:', err);
   }
 }
 
@@ -183,9 +587,10 @@ function esc(str) {
 }
 
 function unesc(str) {
+  if (typeof str !== 'string') return '';
   const div = document.createElement('div');
   div.innerHTML = str;
-  return div.textContent;
+  return div.textContent || '';
 }
 
 function todayStr() {
@@ -1937,10 +2342,37 @@ function closeMobileSidebar() {
 }
 
 // ----------------------------------------------------------------
-// DATA EXPORT & IMPORT
+// DATA EXPORT & IMPORT (Advanced Schema v2 with Validation)
 // ----------------------------------------------------------------
 function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const activeHabits = getActiveHabits();
+  let maxStreak = 0;
+  activeHabits.forEach(h => {
+    const s = calcStreaks(h.id);
+    if (s.current > maxStreak) maxStreak = s.current;
+  });
+
+  const totalCheckinsCount = Object.values(state.checkins).reduce(
+    (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0
+  );
+
+  const backupData = {
+    version: 2,
+    app: 'HabitFlow',
+    exportedAt: new Date().toISOString(),
+    metadata: {
+      totalHabits: state.habits.length,
+      activeHabits: activeHabits.length,
+      totalCheckins: totalCheckinsCount,
+      bestStreak: maxStreak,
+      consistencyScore: consistencyScore()
+    },
+    habits: state.habits,
+    checkins: state.checkins,
+    theme: state.theme
+  };
+
+  const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = Object.assign(document.createElement('a'), {
     href: url,
@@ -1959,24 +2391,414 @@ function importData(file) {
   reader.onload = e => {
     try {
       const imported = JSON.parse(e.target.result);
-      if (!imported || !Array.isArray(imported.habits)) {
-        showToast('Invalid file format. Please supply a valid HabitFlow backup.', 'error');
+      if (!imported || typeof imported !== 'object' || !Array.isArray(imported.habits)) {
+        showToast('Invalid format: file must contain a valid habits array.', 'error');
         return;
       }
-      if (!confirm(`Restore ${imported.habits.length} habits from backup? This will replace current records.`)) return;
 
-      state.habits   = imported.habits.map(migrateHabit);
-      state.checkins = imported.checkins || {};
-      if (imported.theme === 'dark' || imported.theme === 'light') state.theme = imported.theme;
-      save();
-      applyTheme(state.theme);
-      showToast(`Successfully restored ${state.habits.length} habits!`, 'success');
-      render();
-    } catch {
-      showToast('Could not parse the backup file. Verify valid JSON.', 'error');
+      // Field-level schema validation & sanitization
+      const validatedHabits = [];
+      imported.habits.forEach(h => {
+        if (!h || typeof h !== 'object') return;
+        const name = typeof h.name === 'string' ? esc(h.name.trim().slice(0, 80)) : '';
+        if (!name) return; // skip untitled habits
+
+        validatedHabits.push({
+          id:           typeof h.id === 'string' && h.id ? h.id : uid(),
+          name:         name,
+          description:  typeof h.description === 'string' ? esc(h.description.trim().slice(0, 200)) : '',
+          category:     CATEGORIES.includes(h.category) ? h.category : 'other',
+          color:        typeof h.color === 'string' && /^#[0-9A-Fa-f]{6}$/.test(h.color) ? h.color : HABIT_COLORS[0],
+          weeklyTarget: Math.min(7, Math.max(1, Number(h.weeklyTarget) || 7)),
+          createdAt:    typeof h.createdAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.createdAt) ? h.createdAt : todayStr(),
+          archived:     Boolean(h.archived),
+          reminder: {
+            enabled: Boolean(h.reminder?.enabled),
+            time:    typeof h.reminder?.time === 'string' && /^\d{2}:\d{2}$/.test(h.reminder.time) ? h.reminder.time : '08:00',
+            days:    Array.isArray(h.reminder?.days) ? h.reminder.days.filter(d => Number.isInteger(d) && d >= 0 && d <= 6) : [0,1,2,3,4,5,6]
+          }
+        });
+      });
+
+      if (!validatedHabits.length) {
+        showToast('No valid habits could be extracted from this backup.', 'error');
+        return;
+      }
+
+      // Check-ins validation
+      const validatedCheckins = {};
+      if (imported.checkins && typeof imported.checkins === 'object') {
+        for (const [habitId, dateArr] of Object.entries(imported.checkins)) {
+          if (Array.isArray(dateArr)) {
+            const cleanDates = Array.from(new Set(dateArr.filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)))).sort();
+            validatedCheckins[habitId] = cleanDates;
+          }
+        }
+      }
+
+      // User confirmation with choice: Merge vs Replace
+      const shouldMerge = confirm(
+        `Import ${validatedHabits.length} habits:\n\n` +
+        `Click "OK" to MERGE with current habits (Recommended — unions all check-in dates, zero data loss).\n` +
+        `Click "Cancel" to choose REPLACE ALL records instead.`
+      );
+
+      // Pre-import safety snapshot
+      saveSafetyBackup('pre-import');
+
+      if (shouldMerge) {
+        const merged = mergeHabitsAndCheckins(
+          { habits: state.habits, checkins: state.checkins },
+          { habits: validatedHabits, checkins: validatedCheckins }
+        );
+        state.habits   = merged.habits;
+        state.checkins = merged.checkins;
+        save();
+        render();
+        showToast(`Successfully merged ${validatedHabits.length} habits!`, 'success');
+      } else {
+        if (confirm(`Are you sure you want to REPLACE all current habits with the ${validatedHabits.length} habits from the backup?`)) {
+          state.habits   = validatedHabits;
+          state.checkins = validatedCheckins;
+          if (imported.theme === 'dark' || imported.theme === 'light') state.theme = imported.theme;
+          save();
+          applyTheme(state.theme);
+          render();
+          showToast(`Restored ${validatedHabits.length} habits from backup!`, 'success');
+        }
+      }
+    } catch (err) {
+      console.warn('Import parse error:', err);
+      showToast('Could not parse backup file. Please verify valid JSON.', 'error');
     }
   };
   reader.readAsText(file);
+}
+
+// ----------------------------------------------------------------
+// CANVAS PROGRESS CARD GENERATOR (1200x630 PNG)
+// ----------------------------------------------------------------
+function generateProgressCard() {
+  const canvas = $('#progress-card-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const w = 1200;
+  const h = 630;
+  canvas.width  = w;
+  canvas.height = h;
+
+  // 1. Background gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, w, h);
+  bgGrad.addColorStop(0, '#5145D8');
+  bgGrad.addColorStop(0.45, '#3C2EAB');
+  bgGrad.addColorStop(1, '#1E1464');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Decorative ambient glow
+  const glow = ctx.createRadialGradient(w - 200, 100, 20, w - 200, 100, 300);
+  glow.addColorStop(0, 'rgba(255, 222, 106, 0.15)');
+  glow.addColorStop(1, 'rgba(255, 123, 36, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, h);
+
+  // 2. Inner card container
+  const margin = 32;
+  const cw = w - margin * 2;
+  const ch = h - margin * 2;
+  ctx.save();
+  ctx.fillStyle = '#110D38';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, margin, margin, cw, ch, 20);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Brand Header
+  // Logo square
+  ctx.save();
+  const logoGrad = ctx.createLinearGradient(margin + 30, margin + 28, margin + 74, margin + 72);
+  logoGrad.addColorStop(0, '#7C6DFA');
+  logoGrad.addColorStop(1, '#5145D8');
+  ctx.fillStyle = logoGrad;
+  roundRect(ctx, margin + 30, margin + 28, 44, 44, 12);
+  ctx.fill();
+
+  // Checkmark inside logo
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(margin + 42, margin + 50);
+  ctx.lineTo(margin + 49, margin + 58);
+  ctx.lineTo(margin + 63, margin + 42);
+  ctx.stroke();
+  ctx.restore();
+
+  // Brand text
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '800 28px Inter, sans-serif';
+  ctx.fillText('HabitFlow', margin + 86, margin + 52);
+
+  ctx.fillStyle = '#A78BFA';
+  ctx.font = '700 11px Inter, sans-serif';
+  ctx.letterSpacing = '1px';
+  ctx.fillText("HACK DAY HALDIA'26", margin + 88, margin + 68);
+
+  // User Profile / Date (Right aligned)
+  const userName = currentUser?.displayName || 'HabitFlow User';
+  const todayFormatted = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'short', day: 'numeric', year: 'numeric'
+  });
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '700 20px Inter, sans-serif';
+  ctx.fillText(userName, w - margin - 30, margin + 50);
+
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '500 13px Inter, sans-serif';
+  ctx.fillText(todayFormatted, w - margin - 30, margin + 68);
+  ctx.textAlign = 'left';
+
+  // Divider line
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(margin + 30, margin + 92);
+  ctx.lineTo(w - margin - 30, margin + 92);
+  ctx.stroke();
+
+  // 4. Metric Cards (4 Columns)
+  const activeHabits = getActiveHabits();
+  let maxStreak = 0;
+  activeHabits.forEach(h => {
+    const s = calcStreaks(h.id);
+    if (s.current > maxStreak) maxStreak = s.current;
+  });
+
+  const todayStrVal = todayStr();
+  const completedToday = activeHabits.filter(h => isCheckedIn(h.id, todayStrVal)).length;
+  const completionRate = activeHabits.length ? Math.round((completedToday / activeHabits.length) * 100) : 0;
+  const score = consistencyScore();
+
+  const metrics = [
+    { label: 'Active Habits',   val: String(activeHabits.length), sub: 'Goals tracked',    accent: '#8B5CF6' },
+    { label: 'Current Streak',  val: `${maxStreak}d`,             sub: 'Days in a row',    accent: '#F97316' },
+    { label: 'Today Complete',  val: `${completionRate}%`,        sub: `${completedToday}/${activeHabits.length} done`, accent: '#10B981' },
+    { label: 'Consistency',     val: `${score}%`,                 sub: 'Weekly rating',    accent: '#0284C7' }
+  ];
+
+  const statY = margin + 114;
+  const statW = (cw - 60 - 36) / 4;
+  const statH = 118;
+
+  metrics.forEach((m, idx) => {
+    const sx = margin + 30 + idx * (statW + 12);
+
+    // Box background
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, sx, statY, statW, statH, 14);
+    ctx.fill();
+    ctx.stroke();
+
+    // Accent line top
+    ctx.fillStyle = m.accent;
+    ctx.fillRect(sx + 16, statY, 36, 3);
+
+    // Big value
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '800 34px Inter, sans-serif';
+    ctx.fillText(m.val, sx + 16, statY + 52);
+
+    // Label
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = '600 13px Inter, sans-serif';
+    ctx.fillText(m.label, sx + 16, statY + 78);
+
+    // Subtitle
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '500 11px Inter, sans-serif';
+    ctx.fillText(m.sub, sx + 16, statY + 98);
+    ctx.restore();
+  });
+
+  // 5. Activity Heatmap Strip (Past 4 Weeks = 28 days)
+  const hmY = statY + statH + 24;
+  const hmH = 175;
+  const hmW = cw - 60;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, margin + 30, hmY, hmW, hmH, 16);
+  ctx.fill();
+  ctx.stroke();
+
+  // Heatmap strip title
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '700 16px Inter, sans-serif';
+  ctx.fillText('Recent Activity Heatmap', margin + 50, hmY + 34);
+
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '500 12px Inter, sans-serif';
+  ctx.fillText('12-week consistency record across all tracked habits', margin + 50, hmY + 52);
+
+  // Render 12 weeks of heatmap cells
+  const heatCells = buildHeatmapData(null, 12);
+  const cellCols  = 12;
+  const cellSize  = 14;
+  const cellGap   = 4;
+  const heatStartX = margin + 50;
+  const heatStartY = hmY + 68;
+
+  const heatColors = ['#231D56', '#0E4429', '#006D32', '#26A641', '#39D353'];
+
+  for (let c = 0; c < cellCols; c++) {
+    for (let r = 0; r < 7; r++) {
+      const idx = c * 7 + r;
+      const cell = heatCells[idx];
+      const cx = heatStartX + c * (cellSize + cellGap);
+      const cy = heatStartY + r * (cellSize + cellGap);
+
+      ctx.fillStyle = heatColors[cell ? cell.level : 0];
+      roundRect(ctx, cx, cy, cellSize, cellSize, 3);
+      ctx.fill();
+    }
+  }
+
+  // Right side quote/badge inside heatmap box
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#A78BFA';
+  ctx.font = '700 14px Inter, sans-serif';
+  ctx.fillText('“Small Steps, Big Results”', w - margin - 50, hmY + 84);
+
+  ctx.fillStyle = '#E2E8F0';
+  ctx.font = '600 20px Inter, sans-serif';
+  ctx.fillText('Build a Better You Every Day', w - margin - 50, hmY + 112);
+
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '500 12px Inter, sans-serif';
+  ctx.fillText('Tracked with streaks & verified heatmaps', w - margin - 50, hmY + 134);
+  ctx.textAlign = 'left';
+  ctx.restore();
+
+  // 6. Footer Banner
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '600 12px Inter, sans-serif';
+  ctx.fillText('HabitFlow Productivity Dashboard • Hack Day Haldia', margin + 32, h - margin - 12);
+
+  ctx.textAlign = 'right';
+  ctx.fillText('github.com/soumitra-9934/Team-Titan', w - margin - 32, h - margin - 12);
+  ctx.textAlign = 'left';
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function openShareCardModal() {
+  generateProgressCard();
+  openModal($('#share-card-modal'));
+
+  // Enable Web Share button if browser supports sharing files
+  const nativeBtn = $('#share-card-native-btn');
+  if (nativeBtn && navigator.canShare) {
+    nativeBtn.style.display = 'inline-flex';
+  }
+}
+
+async function handleShareCardDownload() {
+  const canvas = $('#progress-card-canvas');
+  if (!canvas) return;
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `habitflow-progress-${todayStr()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Progress card downloaded!', 'success');
+  }, 'image/png');
+}
+
+async function handleShareCardNative() {
+  const canvas = $('#progress-card-canvas');
+  if (!canvas) return;
+  canvas.toBlob(async blob => {
+    if (!blob) return;
+    const file = new File([blob], `habitflow-progress-${todayStr()}.png`, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          title: 'My HabitFlow Progress',
+          text: `Check out my habit streaks on HabitFlow! Built for Hack Day Haldia'26.`,
+          files: [file]
+        });
+        showToast('Shared successfully!', 'success');
+      } catch (err) {
+        if (err.name !== 'AbortError') console.warn('Share error:', err);
+      }
+    } else {
+      handleShareCardDownload();
+    }
+  }, 'image/png');
+}
+
+// ----------------------------------------------------------------
+// NOTIFICATION TICKER (Reliable 60-second Interval Loop)
+// ----------------------------------------------------------------
+const notifiedTodayMap = new Set();
+
+function checkNotificationTicker() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const currentDay = now.getDay();
+  const currentHour = String(now.getHours()).padStart(2, '0');
+  const currentMin  = String(now.getMinutes()).padStart(2, '0');
+  const currentTime = `${currentHour}:${currentMin}`;
+  const todayDateStr = todayStr();
+
+  getActiveHabits().forEach(h => {
+    if (!h.reminder?.enabled) return;
+    if (!h.reminder.days.includes(currentDay)) return;
+    if (h.reminder.time !== currentTime) return;
+
+    const notifKey = `${todayDateStr}_${h.id}`;
+    if (notifiedTodayMap.has(notifKey)) return; // already alerted today
+
+    notifiedTodayMap.add(notifKey);
+    try {
+      new Notification(`Time for: ${unesc(h.name)}`, {
+        body: 'Keep your streak alive — log your progress in HabitFlow!',
+        icon: 'icon-192.png',
+        tag:  `habit-${h.id}`
+      });
+    } catch (e) {
+      console.warn('Notification dispatch failed:', e);
+    }
+  });
 }
 
 // ----------------------------------------------------------------
@@ -2010,11 +2832,77 @@ function bindEvents() {
   $('#topbar-add-habit-btn')?.addEventListener('click', openAddHabitModal);
   $('#habits-add-btn')?.addEventListener('click',       openAddHabitModal);
 
+  // Share Progress Card buttons
+  $('#hero-share-card-btn')?.addEventListener('click',     openShareCardModal);
+  $('#share-card-modal-close')?.addEventListener('click',  () => closeModal($('#share-card-modal')));
+  $('#share-card-modal-cancel')?.addEventListener('click', () => closeModal($('#share-card-modal')));
+  $('#share-card-download-btn')?.addEventListener('click', handleShareCardDownload);
+  $('#share-card-native-btn')?.addEventListener('click',   handleShareCardNative);
+
   // Header quick links
   $('#header-notif-btn')?.addEventListener('click', () => navigateTo('reminders'));
   $('#view-all-habits-btn')?.addEventListener('click', () => navigateTo('habits'));
   $('#view-calendar-btn')?.addEventListener('click', () => navigateTo('heatmap'));
   $('#settings-reminders-link-btn')?.addEventListener('click', () => navigateTo('reminders'));
+
+  // Auth & Profile dropdown
+  $('#header-google-signin-btn')?.addEventListener('click', handleGoogleSignIn);
+  $('#sidebar-auth-btn')?.addEventListener('click', () => {
+    if (currentUser) handleSignOut();
+    else handleGoogleSignIn();
+  });
+
+  const headerProfile = $('#header-user-profile');
+  const userDropdown  = $('#user-dropdown-menu');
+  headerProfile?.addEventListener('click', e => {
+    e.stopPropagation();
+    userDropdown?.classList.toggle('open');
+  });
+
+  document.addEventListener('click', e => {
+    if (userDropdown && headerProfile && !headerProfile.contains(e.target)) {
+      userDropdown.classList.remove('open');
+    }
+  });
+
+  $('#dropdown-signout-btn')?.addEventListener('click', () => {
+    userDropdown?.classList.remove('open');
+    handleSignOut();
+  });
+
+  // Migration Conflict Modal handlers
+  $$('.migration-option-card').forEach(card => {
+    card.addEventListener('click', () => {
+      $$('.migration-option-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      const radio = card.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+    });
+  });
+
+  $('#migration-confirm-btn')?.addEventListener('click', () => {
+    const selectedRadio = $('input[name="migration-choice"]:checked');
+    const choice = selectedRadio ? selectedRadio.value : 'merge';
+    applyMigrationChoice(choice);
+  });
+  $('#migration-cancel-btn')?.addEventListener('click',  () => closeModal($('#migration-modal')));
+  $('#migration-modal-close')?.addEventListener('click', () => closeModal($('#migration-modal')));
+
+  // Network status listeners
+  window.addEventListener('online', () => {
+    if (currentUser) {
+      setSyncBadge('synced', 'Cloud Synced');
+      debouncedCloudSync();
+    } else {
+      setSyncBadge('guest', 'Guest Mode');
+    }
+    showToast('Internet restored.', 'info');
+  });
+
+  window.addEventListener('offline', () => {
+    setSyncBadge('offline', 'Offline (Local)');
+    showToast('Offline: Changes are saved in local storage.', 'warning');
+  });
 
   // Global search input
   $('#global-search')?.addEventListener('input', e => {
@@ -2117,7 +3005,32 @@ document.addEventListener('DOMContentLoaded', () => {
   load();
   applyTheme(state.theme);
   bindEvents();
-  scheduleAllNotifications();
   registerServiceWorker();
   navigateTo('dashboard');
+
+  // Start active 60s reminder ticker
+  setInterval(checkNotificationTicker, 60000);
+
+  // Initialize Firebase Auth listener
+  if (isFirebaseAvailable && auth) {
+    onAuthStateChanged(auth, async user => {
+      currentUser = user;
+      updateAuthUI(user);
+      if (user) {
+        await evaluateCloudSync(user);
+      }
+    });
+
+    // Handle any redirect auth completion
+    checkRedirectAuth().then(user => {
+      if (user) {
+        currentUser = user;
+        updateAuthUI(user);
+        evaluateCloudSync(user);
+      }
+    });
+  } else {
+    updateAuthUI(null);
+  }
 });
+
